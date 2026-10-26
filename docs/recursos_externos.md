@@ -8,7 +8,7 @@ Fecha de consulta: 2026-10-23
 | Recurso | Archivo | Autor | Fuente | Enlace | Licencia |
 |---|---|---|---|---|---|
 | Cocina con luz LED azul bajo la isla | Usuarios/template/inicio.html (línea 70) | Callum Hill | Unsplash | https://unsplash.com/es/fotos/sillas-negras-y-moradas-sobre-suelo-de-madera-marron-dGa5tfaco5s | Unsplash License |
-| Oficina iluminada con LED | Usuarios/template/inicio.html (línea 238) | Por confirmar | Unsplash | https://images.unsplash.com/photo-1513694203232-719a280e022f | Unsplash License |
+| Sala con sofá negro, cómoda blanca y lámpara de pie | Usuarios/template/inicio.html (línea 238) | Alexandra Gorn | Unsplash | https://unsplash.com/es/fotos/comoda-al-lado-del-sofa-JIUjvqe2ZHg | Unsplash License |
 
 ## Librerías y frameworks
 
