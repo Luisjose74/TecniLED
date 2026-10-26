@@ -689,3 +689,96 @@ class MigasDePanTests(TestCase):
     def test_lista_no_tiene_miga_intermedia(self):
         resp = self.client.get(reverse('usuarios_lista'))
         self.assertTemplateNotUsed(resp, 'partials/miga.html')
+
+
+class AccesibilidadPanelTests(TestCase):
+    """Accesibilidad del panel: teclado, lectores de pantalla y formularios."""
+
+    def setUp(self):
+        self.admin = Usuario.objects.create_user(
+            username='admin.panel@tecniled.com', email='admin.panel@tecniled.com',
+            password='Prueba123!', first_name='Admin', last_name='Panel',
+            rol=Usuario.Rol.ADMINISTRADOR,
+        )
+        self.client.force_login(self.admin)
+
+    def test_enlace_para_saltar_al_contenido(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'href="#contenido"')
+        self.assertContains(resp, 'Saltar al contenido')
+        self.assertContains(resp, 'id="contenido"')
+        self.assertContains(resp, 'tabindex="-1"')
+
+    def test_menu_marca_la_seccion_activa(self):
+        import re
+
+        resp = self.client.get(reverse('usuarios_lista'))
+        html = resp.content.decode()
+        enlace = re.search(r'<a href="' + re.escape(reverse('usuarios_lista')) + r'"[^>]*>', html)
+        self.assertIsNotNone(enlace)
+        self.assertIn('aria-current="page"', enlace.group(0))
+
+    def test_menu_tiene_etiquetas_de_tierra(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'aria-label="Menú principal"')
+        self.assertContains(resp, 'aria-label="Secciones del panel"')
+
+    def test_botones_del_menu_informan_estado(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'id="sidebar-abrir"')
+        self.assertContains(resp, 'aria-controls="sidebar"')
+        self.assertContains(resp, 'aria-expanded="false"')
+        self.assertContains(resp, 'id="sidebar-overlay" aria-hidden="true"')
+
+    def test_buscador_tiene_etiqueta_asociada(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'role="search"')
+        self.assertContains(resp, '<label for="q"')
+        self.assertContains(resp, 'id="q"')
+
+    def test_tabla_usa_encabezados_de_columna(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'scope="col"', count=7)
+        # La tabla puede desplazarse en horizontal: debe poder enfocarse con Tab
+        self.assertContains(resp, 'tabindex="0" role="region" aria-label="Tabla de usuarios"')
+
+    def test_tabla_tiene_titulo_para_lectores(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, '<caption class="sr-only">Usuarios registrados en TECNILED</caption>')
+
+    def test_todas_las_tablas_del_panel_tienen_alcance_y_titulo(self):
+        paginas = [
+            'usuarios_lista', 'productos_lista', 'proveedores_lista',
+            'ordenes_lista', 'categorias_lista', 'entradas_lista',
+        ]
+        for nombre in paginas:
+            with self.subTest(pagina=nombre):
+                resp = self.client.get(reverse(nombre))
+                self.assertEqual(resp.status_code, 200)
+                html = resp.content.decode()
+                self.assertIn('<caption class="sr-only">', html)
+                self.assertNotRegex(html, r'<th class=')
+
+    def test_paginacion_es_navegacion_etiquetada(self):
+        for indice in range(12):
+            Usuario.objects.create(
+                username=f'extra{indice}@tecniled.com',
+                email=f'extra{indice}@tecniled.com',
+                rol=Usuario.Rol.CLIENTE,
+            )
+
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'aria-label="Paginación de usuarios"')
+        self.assertContains(resp, '<span aria-current="page"')
+
+    def test_formularios_asocian_etiquetas_con_campos(self):
+        resp = self.client.get(reverse('crear_usuario'))
+        self.assertContains(resp, 'for="id_first_name"')
+        self.assertContains(resp, 'for="id_email"')
+        self.assertContains(resp, 'for="id_rol"')
+
+    def test_lineas_de_orden_tienen_nombres_accesibles(self):
+        resp = self.client.get(reverse('crear_orden'))
+        self.assertContains(resp, 'aria-label="Producto"')
+        self.assertContains(resp, 'aria-label="Cantidad"')
+        self.assertContains(resp, 'aria-label="Precio unitario"')

@@ -38,17 +38,18 @@
     </a>
   </div>
 
-  <div class="overflow-x-auto">
+  <div tabindex="0" role="region" aria-label="Tabla de productos" class="overflow-x-auto">
     <table class="w-full text-left border-collapse min-w-[600px]">
+        <caption class="sr-only">Productos registrados</caption>
       <thead>
         <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm border-b border-gray-100 dark:border-gray-700">
-          <th class="p-4 font-semibold">Producto</th>
-          <th class="p-4 font-semibold">Categoría</th>
-          <th class="p-4 font-semibold">Existencias</th>
-          <th class="p-4 font-semibold">Precio</th>
-          <th class="p-4 font-semibold">Estado</th>
-          <th class="p-4 font-semibold text-center">Destacado en Inicio</th>
-          <th class="p-4 font-semibold text-right">Acciones</th>
+          <th scope="col" class="p-4 font-semibold">Producto</th>
+          <th scope="col" class="p-4 font-semibold">Categoría</th>
+          <th scope="col" class="p-4 font-semibold">Existencias</th>
+          <th scope="col" class="p-4 font-semibold">Precio</th>
+          <th scope="col" class="p-4 font-semibold">Estado</th>
+          <th scope="col" class="p-4 font-semibold text-center">Destacado en Inicio</th>
+          <th scope="col" class="p-4 font-semibold text-right">Acciones</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -128,11 +129,11 @@
   </div>
 
   {% if productos.has_other_pages %}
-  <div class="p-4 flex justify-center gap-2 border-t border-gray-100 dark:border-gray-700">
+  <div role="navigation" aria-label="Paginación de productos" class="p-4 flex justify-center gap-2 border-t border-gray-100 dark:border-gray-700">
     {% if productos.has_previous %}
       <a href="?q={{ query|urlencode }}&categoria={{ categoria }}&page={{ productos.previous_page_number }}" class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Anterior</a>
     {% endif %}
-    <span class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">Página {{ productos.number }} de {{ productos.paginator.num_pages }}</span>
+    <span aria-current="page" class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">Página {{ productos.number }} de {{ productos.paginator.num_pages }}</span>
     {% if productos.has_next %}
       <a href="?q={{ query|urlencode }}&categoria={{ categoria }}&page={{ productos.next_page_number }}" class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Siguiente</a>
     {% endif %}

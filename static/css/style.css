@@ -154,6 +154,58 @@ html.alto-contraste :focus-visible {
   outline-offset: 2px;
 }
 
+/* ---------- Foco visible al navegar con teclado ----------
+   Se usa :focus-visible para que el ratón no muestre el anillo, pero
+   Tab y lectores de pantalla sí sepan dónde está el foco. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--color-primario);
+  outline-offset: 2px;
+}
+
+/* Destino del enlace "Saltar al contenido": el foco entra al contenido,
+   así que no hace falta dibujar un anillo alrededor de toda la página. */
+#contenido:focus {
+  outline: none;
+}
+
+/* ---------- Enlace "Saltar al contenido" del panel ----------
+   Oculto visualmente hasta que recibe el foco con Tab. */
+.saltar-contenido {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.saltar-contenido:focus {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  z-index: 100;
+  background: var(--color-primario);
+  color: var(--color-texto-sobre-primario);
+  font-weight: 700;
+  border-radius: var(--radio-borde);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.15);
+}
+
 /* ---------- Personas que prefieren menos movimiento ---------- */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

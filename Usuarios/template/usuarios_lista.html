@@ -6,9 +6,11 @@
 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
 
     <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between items-center">
-      <form method="get" class="relative w-full sm:w-80">
+      <form method="get" role="search" class="relative w-full sm:w-80">
+        <label for="q" class="sr-only">Buscar usuarios por nombre, correo o cédula</label>
         <svg aria-hidden="true" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
         <input
+          id="q"
           type="text"
           name="q"
           value="{{ query }}"
@@ -25,17 +27,18 @@
       {% endif %}
     </div>
 
-    <div class="overflow-x-auto">
+    <div tabindex="0" role="region" aria-label="Tabla de usuarios" class="overflow-x-auto">
       <table class="w-full text-left border-collapse min-w-[720px]">
+        <caption class="sr-only">Usuarios registrados en TECNILED</caption>
         <thead>
           <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm border-b border-gray-100 dark:border-gray-700">
-            <th class="px-3 py-4 xl:px-4 font-semibold">Nombre completo</th>
-            <th class="px-3 py-4 xl:px-4 font-semibold">Correo</th>
-            <th class="hidden xl:table-cell px-3 py-4 xl:px-4 font-semibold">Cédula</th>
-            <th class="hidden xl:table-cell px-3 py-4 xl:px-4 font-semibold">Teléfono</th>
-            <th class="px-3 py-4 xl:px-4 font-semibold">Rol</th>
-            <th class="px-3 py-4 xl:px-4 font-semibold">Estado</th>
-            <th class="px-3 py-4 xl:px-4 font-semibold text-right">Acciones</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold">Nombre completo</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold">Correo</th>
+            <th scope="col" class="hidden xl:table-cell px-3 py-4 xl:px-4 font-semibold">Cédula</th>
+            <th scope="col" class="hidden xl:table-cell px-3 py-4 xl:px-4 font-semibold">Teléfono</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold">Rol</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold">Estado</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold text-right">Acciones</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -90,15 +93,15 @@
     </div>
 
     {% if usuarios.has_other_pages %}
-    <div class="p-4 flex justify-center gap-2 border-t border-gray-100 dark:border-gray-700">
+    <nav aria-label="Paginación de usuarios" class="p-4 flex justify-center gap-2 border-t border-gray-100 dark:border-gray-700">
       {% if usuarios.has_previous %}
         <a href="?q={{ query }}&page={{ usuarios.previous_page_number }}" class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Anterior</a>
       {% endif %}
-      <span class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">Página {{ usuarios.number }} de {{ usuarios.paginator.num_pages }}</span>
+      <span aria-current="page" class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">Página {{ usuarios.number }} de {{ usuarios.paginator.num_pages }}</span>
       {% if usuarios.has_next %}
         <a href="?q={{ query }}&page={{ usuarios.next_page_number }}" class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Siguiente</a>
       {% endif %}
-    </div>
+    </nav>
     {% endif %}
 
 </div>
