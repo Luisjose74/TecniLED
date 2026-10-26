@@ -134,10 +134,8 @@
       </div>
 
       <div class="flex items-center gap-4">
-        {# Campana: solo visual. El punto rojo y el desplegable se activan cuando exista el sistema de notificaciones #}
-        <button type="button" aria-label="Notificaciones" title="Notificaciones" class="p-2 text-gray-500 hover:text-[#F2AE30] hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors relative">
-          <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-        </button>
+        {# G1-197 / G1-203: campana conectada al sistema de notificaciones #}
+        {% include 'notificaciones/partials/campana.html' %}
 
         <div class="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-gray-700">
           <div class="w-10 h-10 rounded-full bg-[#F2AE30] text-black flex items-center justify-center font-bold text-lg">

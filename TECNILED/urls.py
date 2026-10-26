@@ -27,6 +27,7 @@ urlpatterns = [
     path('sistema/', RedirectView.as_view(pattern_name='respaldos_lista', permanent=False)),
     path('sistema/', include('sistema.urls')),
     path('ayuda/', include('ayuda.urls')),
+    path('notificaciones/', include('notificaciones.urls')),
     path('', include('Usuarios.urls')),
     path('', include('productos.urls')),
     path('', include('compras.urls')),   
