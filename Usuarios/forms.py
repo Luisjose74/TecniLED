@@ -58,3 +58,17 @@ class EditarRolForm(forms.ModelForm):
             
 class SolicitarRecuperacionForm(forms.Form):
     correo = forms.EmailField(label='Correo electrónico')
+    
+class SolicitarRecuperacionForm(forms.Form):
+    correo = forms.EmailField(label='Correo electrónico')
+
+
+class VerificarCodigoForm(forms.Form):
+    """Código de 6 dígitos del doble factor (G1-303)."""
+    codigo = forms.CharField(label='Código de verificación', min_length=6, max_length=6)
+
+    def clean_codigo(self):
+        codigo = self.cleaned_data['codigo'].strip()
+        if not codigo.isdigit():
+            raise forms.ValidationError('El código debe tener solo números.')
+        return codigo
