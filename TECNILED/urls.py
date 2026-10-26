@@ -34,5 +34,10 @@ urlpatterns = [
 ]
 
 
+# G1-203: cuando una vista lanza PermissionDenied se registra la notificación
+# y se muestra la página 403 existente.
+handler403 = 'notificaciones.views.error_403'
+
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

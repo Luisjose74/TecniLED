@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.contrib.auth.models import Permission
 from django.test import TestCase
 from django.urls import reverse
 
@@ -109,6 +110,40 @@ class BloqueoDeCuentaNotificacionTests(TestCase):
                 tipo=Notificacion.Tipo.BLOQUEO_CUENTA,
             ).exists()
         )
+
+
+class AccesoDenegadoNotificacionTests(TestCase):
+    """G1-203: alerta cuando el usuario intenta una función sin permisos."""
+
+    def setUp(self):
+        self.cliente = crear_usuario(email='sin-permisos@test.com')
+
+    def test_cliente_recibe_403_y_notificacion(self):
+        self.client.force_login(self.cliente)
+        respuesta = self.client.get(reverse('usuarios_lista'))
+
+        self.assertEqual(respuesta.status_code, 403)
+        notificacion = Notificacion.objects.get(destinatario=self.cliente)
+        self.assertEqual(notificacion.tipo, Notificacion.Tipo.ACCESO_DENEGADO)
+        self.assertEqual(notificacion.canal, Notificacion.Canal.INTERNA)
+        self.assertIn(reverse('usuarios_lista'), notificacion.mensaje)
+        self.assertIn(self.cliente.get_rol_display(), notificacion.mensaje)
+
+    def test_anonimo_no_genera_notificacion(self):
+        respuesta = self.client.get(reverse('usuarios_lista'))
+
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertFalse(Notificacion.objects.exists())
+
+    def test_usuario_con_permiso_no_genera_notificacion(self):
+        permiso = Permission.objects.get(codename='gestionar_usuarios')
+        self.cliente.user_permissions.add(permiso)
+        self.client.force_login(self.cliente)
+
+        respuesta = self.client.get(reverse('usuarios_lista'))
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertFalse(Notificacion.objects.exists())
 
 
 class NotificacionesVistasTests(TestCase):
