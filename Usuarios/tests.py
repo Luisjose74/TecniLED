@@ -689,3 +689,13 @@ class MigasDePanTests(TestCase):
     def test_lista_no_tiene_miga_intermedia(self):
         resp = self.client.get(reverse('usuarios_lista'))
         self.assertTemplateNotUsed(resp, 'partials/miga.html')
+        
+class CreditosTests(TestCase):
+    def test_pagina_creditos_carga(self):
+        respuesta = self.client.get('/creditos/')
+        self.assertEqual(respuesta.status_code, 200)
+
+    def test_creditos_muestra_autores_de_las_fotos(self):
+        respuesta = self.client.get('/creditos/')
+        self.assertContains(respuesta, 'Callum Hill')
+        self.assertContains(respuesta, 'Alexandra Gorn')
