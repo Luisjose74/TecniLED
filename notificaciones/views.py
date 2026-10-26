@@ -60,3 +60,28 @@ def marcar_todas(request):
         )
 
     return redirect('notificaciones_lista')
+
+
+def error_403(request, exception=None, template_name='403.html'):
+    """G1-203: registra el intento de acceso denegado y muestra la página 403.
+
+    Django llama a esta vista para cualquier ``PermissionDenied`` lanzada por
+    las vistas (por ejemplo, ``permission_required(..., raise_exception=True)``).
+    """
+    usuario = getattr(request, 'user', None)
+
+    if usuario is not None and usuario.is_authenticated:
+        ruta = request.path
+        Notificacion.objects.create(
+            destinatario=usuario,
+            tipo=Notificacion.Tipo.ACCESO_DENEGADO,
+            canal=Notificacion.Canal.INTERNA,
+            mensaje=(
+                f'Se denegó tu acceso a «{ruta}» porque tu rol '
+                f'({usuario.get_rol_display()}) no tiene los permisos '
+                'necesarios. Si crees que es un error, contacta al '
+                'administrador.'
+            ),
+        )
+
+    return render(request, template_name, {'exception': exception}, status=403)
