@@ -3,8 +3,60 @@
 {% block title %}Créditos – TECNILED{% endblock %}
 
 {% block content %}
-<main class="max-w-5xl mx-auto px-4 py-12">
+<main class="max-w-6xl mx-auto px-4 py-12">
   <h1 class="text-3xl font-bold mb-4">Créditos y referencias</h1>
-  <p class="text-gray-400">Recursos de terceros usados en el sitio.</p>
+  <p class="text-gray-400 mb-8">Recursos de terceros usados en el sitio.</p>
+
+  <div class="overflow-x-auto rounded-xl border border-gray-700">
+    <table class="w-full text-sm text-left">
+      <caption class="sr-only">Recursos externos con su autor, fuente, enlace y fecha de consulta</caption>
+      <thead class="bg-gray-800 text-gray-200">
+        <tr>
+          <th scope="col" class="px-4 py-3">Recurso</th>
+          <th scope="col" class="px-4 py-3">Autor</th>
+          <th scope="col" class="px-4 py-3">Fuente</th>
+          <th scope="col" class="px-4 py-3">Enlace</th>
+          <th scope="col" class="px-4 py-3">Fecha de consulta</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-700 text-gray-300">
+        <tr>
+          <td class="px-4 py-3">Foto: cocina con luz LED azul bajo la isla</td>
+          <td class="px-4 py-3">Callum Hill</td>
+          <td class="px-4 py-3">Unsplash</td>
+          <td class="px-4 py-3"><a href="https://unsplash.com/es/fotos/sillas-negras-y-moradas-sobre-suelo-de-madera-marron-dGa5tfaco5s" target="_blank" rel="noopener" class="text-[#F2AE30] underline">Ver foto</a></td>
+          <td class="px-4 py-3">23/10/2026</td>
+        </tr>
+        <tr>
+          <td class="px-4 py-3">Foto: sala con sofá negro y lámpara de pie</td>
+          <td class="px-4 py-3">Alexandra Gorn</td>
+          <td class="px-4 py-3">Unsplash</td>
+          <td class="px-4 py-3"><a href="https://unsplash.com/es/fotos/comoda-al-lado-del-sofa-JIUjvqe2ZHg" target="_blank" rel="noopener" class="text-[#F2AE30] underline">Ver foto</a></td>
+          <td class="px-4 py-3">23/10/2026</td>
+        </tr>
+        <tr>
+          <td class="px-4 py-3">Iconos SVG</td>
+          <td class="px-4 py-3">Lucide Contributors</td>
+          <td class="px-4 py-3">lucide.dev</td>
+          <td class="px-4 py-3"><a href="https://lucide.dev" target="_blank" rel="noopener" class="text-[#F2AE30] underline">lucide.dev</a></td>
+          <td class="px-4 py-3">23/10/2026</td>
+        </tr>
+        <tr>
+          <td class="px-4 py-3">Tailwind CSS</td>
+          <td class="px-4 py-3">Tailwind Labs</td>
+          <td class="px-4 py-3">tailwindcss.com</td>
+          <td class="px-4 py-3"><a href="https://tailwindcss.com" target="_blank" rel="noopener" class="text-[#F2AE30] underline">tailwindcss.com</a></td>
+          <td class="px-4 py-3">23/10/2026</td>
+        </tr>
+        <tr>
+          <td class="px-4 py-3">Django</td>
+          <td class="px-4 py-3">Django Software Foundation</td>
+          <td class="px-4 py-3">djangoproject.com</td>
+          <td class="px-4 py-3"><a href="https://www.djangoproject.com" target="_blank" rel="noopener" class="text-[#F2AE30] underline">djangoproject.com</a></td>
+          <td class="px-4 py-3">23/10/2026</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </main>
 {% endblock %}
