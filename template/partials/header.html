@@ -80,6 +80,9 @@
           </div>
         </form>
 
+        {# G1-197 / G1-203: campana de notificaciones para usuarios con sesión #}
+        {% include 'notificaciones/partials/campana.html' %}
+
         {% if user.is_authenticated %}
           <!-- Perfil: reemplaza la píldora de usuario y el botón Panel de administración -->
           <details class="relative hidden sm:block">
