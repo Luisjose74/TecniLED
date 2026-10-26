@@ -192,3 +192,7 @@ def inactivar_usuario(request, usuario_id):
         messages.success(request, f'La cuenta de {usuario.email} fue inactivada.')
 
     return redirect('usuario_detalle', usuario_id=usuario.id)
+
+def creditos(request):
+    # Página pública con los créditos de imágenes, iconos y librerías externas
+    return render(request, 'creditos.html')
