@@ -18,6 +18,11 @@ class ComplexPasswordValidator:
                 "La contraseña debe incluir al menos una letra minúscula.",
                 code='password_no_lower',
             )
+        if not re.search(r'\d', password):
+            raise ValidationError(
+                "La contraseña debe incluir al menos un número.",
+                code='password_no_digit',
+            )
         if not re.search(r'[^A-Za-z0-9]', password):
             raise ValidationError(
                 "La contraseña debe incluir al menos un símbolo (ej. !@#$%).",
@@ -25,4 +30,7 @@ class ComplexPasswordValidator:
             )
 
     def get_help_text(self):
-        return "Tu contraseña debe tener mínimo 8 caracteres, con mayúsculas, minúsculas y símbolos."
+        return (
+            "Tu contraseña debe tener mínimo 8 caracteres, con mayúsculas, "
+            "minúsculas, números y símbolos."
+        )

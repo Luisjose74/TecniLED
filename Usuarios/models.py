@@ -25,9 +25,24 @@ class Usuario(AbstractUser):
         SUSPENDIDA = 'suspendida', 'Suspendida'
         BLOQUEADA = 'bloqueada', 'Bloqueada'
 
+    class TipoDocumento(models.TextChoices):
+        CC = 'CC', 'Cédula de Ciudadanía'
+        TI = 'TI', 'Tarjeta de Identidad'
+        CE = 'CE', 'Cédula de Extranjería'
+        PPT = 'PPT', 'Permiso por Protección Temporal'
+        PTP = 'PTP', 'Permiso Temporal de Permanencia'
+
     MAX_INTENTOS = 3  # G1-128
 
     email = models.EmailField('correo electrónico', unique=True)
+    tipo_documento = models.CharField(
+        'tipo de documento',
+        max_length=3,
+        choices=TipoDocumento.choices,
+        blank=True,
+        default='',
+        help_text='Tipo de documento de identidad (estándar Colombia).',
+    )
     documento = models.CharField(max_length=20, unique=True, null=True, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
     rol = models.CharField(max_length=20, choices=Rol.choices, default=Rol.CLIENTE)
@@ -62,6 +77,13 @@ class Usuario(AbstractUser):
         self.groups.remove(*grupos_de_roles)
         grupo, _ = Group.objects.get_or_create(name=self.get_rol_display())
         self.groups.add(grupo)
+
+    @property
+    def documento_completo(self):
+        """Documento con su tipo, listo para mostrar en listados y detalles."""
+        if not self.documento:
+            return '—'
+        return f'{self.tipo_documento} {self.documento}'.strip()
 
     def __str__(self):
         return self.email
