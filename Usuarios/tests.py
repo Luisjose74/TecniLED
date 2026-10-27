@@ -852,6 +852,10 @@ class LoginLogoutTests(TestCase):
         self.assertContains(resp, 'autocomplete="username"')
         self.assertContains(resp, 'autocomplete="current-password"')
 
+    def test_login_limpia_las_credenciales_al_cargar(self):
+        resp = self.client.get(reverse('login'))
+        self.assertContains(resp, 'js/limpiar_login.js')
+
     def test_logout_cierra_sesion_y_el_login_no_trae_credenciales(self):
         usuario = Usuario.objects.create_user(
             username='cierre@test.com', email='cierre@test.com', password='Prueba123!',
