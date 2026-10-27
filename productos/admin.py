@@ -1,7 +1,6 @@
 from django import forms
 from django.contrib import admin
-
-from .models import Producto, Proveedor
+from .models import Categoria, MovimientoInventario, Producto, Proveedor
 
 
 class ProveedorAdminForm(forms.ModelForm):
@@ -47,3 +46,24 @@ class ProductoAdmin(admin.ModelAdmin):
     list_filter = ('categoria', 'proveedor', 'activo', 'destacado_en_inicio')
     search_fields = ('sku', 'nombre')
     ordering = ('nombre',)
+
+@admin.register(Categoria)
+class CategoriaAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'creado_en')
+    search_fields = ('nombre',)
+
+
+
+@admin.register(MovimientoInventario)
+class MovimientoInventarioAdmin(admin.ModelAdmin):
+    list_display = ('fecha', 'producto', 'tipo', 'cantidad', 'stock_resultante', 'usuario')
+    list_filter = ('tipo',)
+    search_fields = ('producto__nombre', 'producto__sku')
+    # Es un historial: se consulta, no se edita desde el admin
+    readonly_fields = ('producto', 'tipo', 'cantidad', 'stock_resultante', 'observacion', 'usuario', 'fecha')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

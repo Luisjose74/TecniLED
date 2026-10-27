@@ -26,6 +26,7 @@ urlpatterns = [
     # Redirige /sistema/ directamente a /sistema/respaldos/
     path('sistema/', RedirectView.as_view(pattern_name='respaldos_lista', permanent=False)),
     path('sistema/', include('sistema.urls')),
+    path('ayuda/', include('ayuda.urls')),
     path('', include('Usuarios.urls')),
     path('', include('productos.urls')),
     path('', include('compras.urls')),   

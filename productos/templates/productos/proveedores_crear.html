@@ -1,7 +1,11 @@
 {% extends 'admin_base.html' %}
 {% block title %}{% if proveedor %}Editar proveedor{% else %}Registrar proveedor{% endif %} - TECNILED{% endblock %}
 {% block titulo_seccion %}Proveedores{% endblock %}
-{% block migas_actual %}Proveedores{% endblock %}
+{% block migas_intermedias %}
+{% url 'proveedores_lista' as url_lista %}
+{% include 'partials/miga.html' with enlace=url_lista texto='Proveedores' %}
+{% endblock %}
+{% block migas_actual %}{% if proveedor %}Editar proveedor{% else %}Registrar proveedor{% endif %}{% endblock %}
 {% block content %}
 <div class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-xl mx-auto shadow-2xl border border-gray-100 dark:border-gray-700 flex flex-col">
 
@@ -10,8 +14,8 @@
       <h3 class="text-xl font-bold text-gray-900 dark:text-white">{% if proveedor %}Editar proveedor{% else %}Nuevo proveedor{% endif %}</h3>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{% if proveedor %}Actualiza los datos de contacto del proveedor{% else %}Completa los datos del proveedor{% endif %}</p>
     </div>
-    <a href="{% url 'proveedores_lista' %}" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    <a href="{% url 'proveedores_lista' %}" title="Cerrar" aria-label="Cerrar" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+      <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
     </a>
   </div>
 
@@ -98,7 +102,7 @@
         Cancelar
       </a>
       <button type="submit" class="px-5 py-2.5 bg-[#F2AE30] hover:bg-[#d99b28] text-black font-bold rounded-xl transition-colors shadow-lg">
-        {% if proveedor %}Guardar cambios{% else %}Guardar Proveedor{% endif %}
+        {% if proveedor %}Guardar cambios{% else %}Guardar proveedor{% endif %}
       </button>
     </div>
   </form>

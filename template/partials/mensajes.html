@@ -1,0 +1,34 @@
+{% comment %}
+  Componente único de mensajes de Django (G1-1193).
+  Uso:
+    {% include 'partials/mensajes.html' %}                    -> mensajes fijos (panel admin)
+    {% include 'partials/mensajes.html' with flotante=True %}  -> mensajes flotantes (tienda)
+  El color y el icono cambian según el tipo: success, error, warning o info.
+{% endcomment %}
+{% for message in messages %}
+<div role="alert"
+     class="{% if flotante %}mensaje-flotante shadow-lg{% endif %} flex items-start gap-3 p-4 rounded-xl border text-sm font-medium
+       {% if message.level_tag == 'error' %}bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800
+       {% elif message.level_tag == 'warning' %}bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800
+       {% elif message.level_tag == 'info' %}bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800
+       {% else %}bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800{% endif %}">
+
+  {% if message.level_tag == 'error' %}
+  <svg aria-hidden="true" class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+  {% elif message.level_tag == 'warning' %}
+  <svg aria-hidden="true" class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+  {% elif message.level_tag == 'info' %}
+  <svg aria-hidden="true" class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+  {% else %}
+  <svg aria-hidden="true" class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+  {% endif %}
+
+  <span class="flex-1">{{ message }}</span>
+
+  <button type="button" onclick="this.parentElement.remove()"
+          class="opacity-60 hover:opacity-100"
+          aria-label="Cerrar mensaje" title="Cerrar mensaje">
+    <span aria-hidden="true">✕</span>
+  </button>
+</div>
+{% endfor %}

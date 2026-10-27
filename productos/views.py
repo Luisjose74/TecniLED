@@ -1,16 +1,16 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
-from django.db.models import Q, Value
 from django.db.models.functions import Replace
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
-from .forms import InactivarProveedorForm, ProductoForm, ProveedorEditarForm, ProveedorForm
-from .models import Producto, Proveedor
+from django.db.models import Count, Q, Value
 
+from .forms import CategoriaForm, EntradaInventarioForm, InactivarProveedorForm, ProductoForm, ProveedorEditarForm, ProveedorForm
+from .models import Categoria, MovimientoInventario, Producto, Proveedor
 
 @login_required
 @permission_required('Usuarios.gestionar_inventario', raise_exception=True)
@@ -18,15 +18,16 @@ def productos_lista(request):
     query = request.GET.get('q', '').strip()
     categoria = request.GET.get('categoria', '').strip()
 
-    productos = Producto.objects.select_related('proveedor')
+    productos = Producto.objects.select_related('proveedor', 'categoria')
 
     if query:
         productos = productos.filter(
             Q(nombre__icontains=query) | Q(sku__icontains=query)
         )
 
-    if categoria in Producto.Categoria.values:
-        productos = productos.filter(categoria=categoria)
+        # G1-151: el filtro llega con el id de la categoría (se ignora si no existe)
+    if categoria.isdigit() and Categoria.objects.filter(pk=categoria).exists():
+        productos = productos.filter(categoria_id=categoria)
     else:
         categoria = ''  # valor manipulado en la URL: se ignora
 
@@ -37,7 +38,7 @@ def productos_lista(request):
         'productos': pagina,
         'query': query,
         'categoria': categoria,
-        'categorias': Producto.Categoria.choices,
+        'categorias': Categoria.objects.all(),
     })
 
 
@@ -113,7 +114,7 @@ def cambiar_estado_producto(request, pk, activar):
 @permission_required('Usuarios.gestionar_inventario', raise_exception=True)
 @require_POST
 def alternar_destacado(request, producto_id):
-    """Activa/desactiva 'Destacado en Inicio' (interruptor verde de la tabla)."""
+    """Activa/desactiva ''Destacado en inicio' (interruptor verde de la tabla)."""
     producto = get_object_or_404(Producto, pk=producto_id)
     producto.destacado_en_inicio = not producto.destacado_en_inicio
     producto.save(update_fields=['destacado_en_inicio', 'actualizado_en'])
@@ -235,7 +236,7 @@ def inactivar_proveedor(request, pk):
         siguiente = reverse('proveedores_lista')
 
     if not proveedor.activo:
-        messages.error(request, f'El proveedor "{proveedor.nombre}" ya está inactivo.')
+        messages.warning(request, f'El proveedor "{proveedor.nombre}" ya está inactivo.')
         return redirect(siguiente)
 
     form = InactivarProveedorForm(request.POST)
@@ -262,9 +263,108 @@ def reactivar_proveedor(request, pk):
         siguiente = reverse('proveedores_lista')
 
     if proveedor.activo:
-        messages.error(request, f'El proveedor "{proveedor.nombre}" ya está activo.')
+        messages.warning(request, f'El proveedor "{proveedor.nombre}" ya está activo.')
         return redirect(siguiente)
 
     proveedor.reactivar()
     messages.success(request, f'Proveedor "{proveedor.nombre}" reactivado correctamente.')
     return redirect(siguiente)
+
+# ---------------------------------------------------------------------------
+# G1-151: gestión de categorías
+# ---------------------------------------------------------------------------
+def _render_categorias(request, form, modal_abierto='', categoria_editada=None):
+    """Dibuja la lista; si hubo un error al guardar, la plantilla reabre el modal con el error."""
+    query = request.GET.get('q', '').strip()
+    categorias = Categoria.objects.annotate(total_productos=Count('productos'))
+    if query:
+        categorias = categorias.filter(nombre__icontains=query)
+    return render(request, 'productos/categorias_lista.html', {
+        'categorias': categorias,
+        'query': query,
+        'form': form,
+        'modal_abierto': modal_abierto,        # '', 'crear' o 'editar'
+        'categoria_editada': categoria_editada,
+    })
+
+
+@login_required
+@permission_required('Usuarios.gestionar_inventario', raise_exception=True)
+def categorias_lista(request):
+    return _render_categorias(request, CategoriaForm())
+
+
+@login_required
+@permission_required('Usuarios.gestionar_inventario', raise_exception=True)
+@require_POST
+def crear_categoria(request):
+    form = CategoriaForm(request.POST)
+    if form.is_valid():
+        categoria = form.save()
+        messages.success(request, f'Categoría "{categoria.nombre}" creada correctamente.')
+        return redirect('categorias_lista')
+    return _render_categorias(request, form, modal_abierto='crear')
+
+
+@login_required
+@permission_required('Usuarios.gestionar_inventario', raise_exception=True)
+@require_POST
+def editar_categoria(request, pk):
+    categoria = get_object_or_404(Categoria, pk=pk)
+    form = CategoriaForm(request.POST, instance=categoria)
+    if form.is_valid():
+        categoria = form.save()
+        messages.success(request, f'Categoría "{categoria.nombre}" actualizada correctamente.')
+        return redirect('categorias_lista')
+    return _render_categorias(request, form, modal_abierto='editar', categoria_editada=categoria)
+
+
+
+# ---------------------------------------------------------------------------
+# G1-149: entradas de inventario
+# ---------------------------------------------------------------------------
+def _render_entradas(request, form, abrir_modal=False):
+    """Dibuja el historial de entradas; si hubo un error, la plantilla reabre el modal."""
+    query = request.GET.get('q', '').strip()
+    movimientos = MovimientoInventario.objects.filter(
+        tipo=MovimientoInventario.Tipo.ENTRADA
+    ).select_related('producto', 'usuario')
+    if query:
+        movimientos = movimientos.filter(Q(producto__nombre__icontains=query) | Q(producto__sku__icontains=query))
+    pagina = Paginator(movimientos, 10).get_page(request.GET.get('page'))
+    return render(request, 'productos/entradas_lista.html', {
+        'movimientos': pagina,
+        'query': query,
+        'form': form,
+        'abrir_modal': abrir_modal,
+    })
+
+
+@login_required
+@permission_required('Usuarios.gestionar_inventario', raise_exception=True)
+def entradas_lista(request):
+    return _render_entradas(request, EntradaInventarioForm())
+
+
+@login_required
+@permission_required('Usuarios.gestionar_inventario', raise_exception=True)
+@require_POST
+def registrar_entrada(request):
+    form = EntradaInventarioForm(request.POST)
+    if form.is_valid():
+        producto = form.cleaned_data['producto']
+        cantidad = form.cleaned_data['cantidad']
+        try:
+            movimiento = MovimientoInventario.registrar_entrada(
+                producto, cantidad, usuario=request.user, observacion=form.cleaned_data['observacion'],
+            )
+        except ValueError as error:  # p. ej. el producto se inactivó justo antes de guardar
+            form.add_error(None, str(error))
+        else:
+            messages.success(
+                request,
+                f'Entrada registrada: +{cantidad} unidades de "{producto.nombre}". '
+                f'Stock actual: {movimiento.stock_resultante}.'
+            )
+            return redirect('entradas_lista')
+    return _render_entradas(request, form, abrir_modal=True)

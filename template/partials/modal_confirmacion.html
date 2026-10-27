@@ -1,0 +1,29 @@
+{% comment %}
+  Modal reutilizable para confirmar acciones irreversibles (G1-1216).
+  Para usarlo, agrega data-confirmar="¿Pregunta?" a cualquier <form>.
+  El JavaScript está en static/js/confirmar.js.
+{% endcomment %}
+<div id="modal-confirmacion" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] items-center justify-center p-4"
+     role="dialog" aria-modal="true" aria-labelledby="confirmacion-titulo" aria-describedby="confirmacion-texto">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
+    <div class="flex items-start gap-3 mb-6">
+      <div class="w-10 h-10 shrink-0 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+        <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      </div>
+      <div>
+        <h2 id="confirmacion-titulo" class="text-lg font-bold text-gray-900 dark:text-white">Confirmar acción</h2>
+        <p id="confirmacion-texto" class="text-sm text-gray-600 dark:text-gray-300 mt-1"></p>
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end">
+      <button type="button" onclick="cerrarConfirmacion()"
+        class="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        Cancelar
+      </button>
+      <button type="button" id="confirmacion-aceptar" onclick="aceptarConfirmacion()"
+        class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold transition-colors">
+        Sí, continuar
+      </button>
+    </div>
+  </div>
+</div>

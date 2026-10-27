@@ -1,9 +1,10 @@
 from django import forms
 
-from .models import Producto, Proveedor
 from django.db.models import Q
 from django.core.files.uploadedfile import UploadedFile
 import re
+
+from .models import Categoria, MovimientoInventario, Producto, Proveedor
 
 
 class ProductoForm(forms.ModelForm):
@@ -19,15 +20,18 @@ class ProductoForm(forms.ModelForm):
             'nombre': 'Título',
             'categoria': 'Categoría',
             'proveedor': 'Proveedor',
-            'precio': 'Precio Normal',
-            'precio_oferta': 'Precio de Oferta',
-            'stock': 'Stock Disponible',
+            'precio': 'Precio normal',
+            'precio_oferta': 'Precio de oferta',
+            'stock': 'Existencias disponibles',
             'imagen': 'Imagen',
             'descripcion': 'Descripción Corta',
             'instalacion': 'Uso e Instalación',
             'especificaciones': 'Características Técnicas',  
         }
+        
                 # G1-147: mensajes de error en español (el proyecto está en en-us)
+
+        
         error_messages = {
             'sku': {
                 'required': 'El código (SKU) es obligatorio.',
@@ -101,6 +105,8 @@ class ProductoForm(forms.ModelForm):
         self.fields['proveedor'].queryset = Proveedor.objects.filter(
             Q(activo=True) | Q(pk=self.instance.proveedor_id)
         )
+        
+        self.fields['categoria'].empty_label = 'Selecciona una categoría'
                 # G1-147: el navegador también avisa antes de enviar (el servidor es la validación real)
         self.fields['precio'].widget.attrs['min'] = '0.01'
         self.fields['precio_oferta'].widget.attrs['min'] = '0.01'
@@ -243,3 +249,89 @@ class InactivarProveedorForm(forms.Form):
             'max_length': 'El motivo no puede superar los 500 caracteres.',
         },
     )
+
+
+class CategoriaForm(forms.ModelForm):
+    """G1-151: crear y editar categorías (un solo campo: el nombre)."""
+
+    class Meta:
+        model = Categoria
+        fields = ['nombre']
+        labels = {'nombre': 'Nombre de la categoría'}
+        widgets = {'nombre': forms.TextInput(attrs={'placeholder': 'Ej: Iluminación exterior'})}
+        error_messages = {
+            'nombre': {
+                'required': 'El nombre de la categoría es obligatorio.',
+                'max_length': 'El nombre no puede superar los 60 caracteres.',
+                'unique': 'Ya existe una categoría con este nombre.',
+            },
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['nombre'].widget.attrs['class'] = (
+            'w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 '
+            'rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none '
+            'focus:ring-2 focus:ring-[#F2AE30]'
+        )
+
+    def clean_nombre(self):
+        nombre = ' '.join((self.cleaned_data.get('nombre') or '').split())  # quita espacios dobles
+        if len(nombre) < 2:
+            raise forms.ValidationError('El nombre debe tener al menos 2 caracteres.')
+        # Duplicado sin distinguir mayúsculas ni tildes de mayúscula (se compara en Python
+        # porque SQLite no ignora mayúsculas en letras con tilde). Al editar se ignora a sí misma.
+        otros = Categoria.objects.exclude(pk=self.instance.pk).values_list('nombre', flat=True)
+        if any(otro.casefold() == nombre.casefold() for otro in otros):
+            raise forms.ValidationError('Ya existe una categoría con este nombre.')
+        return nombre
+
+
+class EntradaInventarioForm(forms.Form):
+    """G1-149: registrar la llegada de mercancía (producto + cantidad)."""
+    MAX_CANTIDAD = 100000
+
+    producto = forms.ModelChoiceField(
+        queryset=Producto.objects.none(),
+        label='Producto',
+        empty_label='Selecciona un producto',
+        error_messages={
+            'required': 'Selecciona el producto que ingresó.',
+            'invalid_choice': 'Selecciona un producto válido de la lista.',
+        },
+    )
+    cantidad = forms.IntegerField(
+        label='Cantidad recibida',
+        min_value=1,
+        max_value=MAX_CANTIDAD,
+        error_messages={
+            'required': 'Indica la cantidad recibida.',
+            'invalid': 'La cantidad debe ser un número entero.',
+            'min_value': 'La cantidad debe ser mayor a 0.',
+            'max_value': f'La cantidad no puede superar {MAX_CANTIDAD:,} unidades por entrada.'.replace(',', '.'),
+        },
+    )
+    observacion = forms.CharField(
+        label='Observación (opcional)',
+        max_length=200,
+        required=False,
+        error_messages={'max_length': 'La observación no puede superar los 200 caracteres.'},
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Solo productos activos: un producto inactivo está retirado de la operación (G1-146)
+        self.fields['producto'].queryset = Producto.objects.filter(activo=True).order_by('nombre')
+        self.fields['producto'].label_from_instance = lambda p: f'{p.nombre} (SKU {p.sku}) · stock actual: {p.stock}'
+        clase_input = (
+            'w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 '
+            'rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none '
+            'focus:ring-2 focus:ring-[#F2AE30]'
+        )
+        for campo in self.fields.values():
+            campo.widget.attrs['class'] = clase_input
+        self.fields['cantidad'].widget.attrs.update({'min': '1', 'max': str(self.MAX_CANTIDAD), 'placeholder': 'Ej: 25'})
+        self.fields['observacion'].widget.attrs['placeholder'] = 'Ej: Factura 1234 del proveedor'
+
+    def clean_observacion(self):
+        return ' '.join((self.cleaned_data.get('observacion') or '').split())

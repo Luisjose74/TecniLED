@@ -37,17 +37,10 @@
 
   {% include 'partials/header.html' %}
 
-  <!-- Mensajes de Django: aparecen flotando arriba a la derecha y se ocultan solos -->
+   <!-- Mensajes de Django: aparecen flotando arriba a la derecha y se ocultan solos -->
   {% if messages %}
   <div class="fixed top-24 right-4 z-[60] space-y-2 w-[calc(100%-2rem)] max-w-sm">
-    {% for message in messages %}
-    <div class="mensaje-flotante flex items-start gap-3 p-4 rounded-xl shadow-lg text-sm font-medium border
-      {% if message.tags == 'error' %}bg-red-50 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-100 dark:border-red-800
-      {% else %}bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border-emerald-100 dark:border-emerald-800{% endif %}">
-      <span class="flex-1">{{ message }}</span>
-      <button type="button" onclick="this.parentElement.remove()" class="opacity-60 hover:opacity-100" aria-label="Cerrar mensaje">✕</button>
-    </div>
-    {% endfor %}
+    {% include 'partials/mensajes.html' with flotante=True %}
   </div>
   {% endif %}
 

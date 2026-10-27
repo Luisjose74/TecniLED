@@ -1,6 +1,10 @@
 {% extends 'admin_base.html' %}
 {% block title %}Restaurar respaldo - TECNILED{% endblock %}
 {% block titulo_seccion %}Copias de seguridad{% endblock %}
+{% block migas_intermedias %}
+{% url 'respaldos_lista' as url_lista %}
+{% include 'partials/miga.html' with enlace=url_lista texto='Copias de seguridad' %}
+{% endblock %}
 {% block migas_actual %}Restaurar respaldo{% endblock %}
 {% block content %}
 <div class="flex justify-center">
@@ -37,7 +41,7 @@
                     <a href="{% url 'respaldos_lista' %}"
                         class="flex-1 py-3.5 text-center text-gray-600 dark:text-gray-300 font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors">Cancelar</a>
                     <button type="submit"
-                        class="flex-1 py-3.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors shadow-lg">Restaurar</button>
+                        class="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors shadow-lg">Restaurar</button>
                 </div>
             </form>
         </div>

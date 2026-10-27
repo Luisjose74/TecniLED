@@ -1,5 +1,6 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 
 
 class Proveedor(models.Model):
@@ -40,13 +41,22 @@ class Proveedor(models.Model):
         self.save(update_fields=['activo', 'motivo_inactivacion', 'fecha_actualizacion'])
 
 
+class Categoria(models.Model):
+    """G1-151: categorías para clasificar productos (se crean y editan desde el panel)."""
+    nombre = models.CharField('Nombre', max_length=60, unique=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['nombre']
+        verbose_name = 'Categoría'
+        verbose_name_plural = 'Categorías'
+
+    def __str__(self):
+        return self.nombre
+    
+
+
 class Producto(models.Model):
-    class Categoria(models.TextChoices):
-        # Mismos 4 valores que el <select name="category"> del diseño (AdminDashboard.tsx)
-        ELECTRICOS = 'electricos', 'Eléctricos'
-        INTERIORES = 'interiores', 'Interiores'
-        FERRETERIA = 'ferreteria', 'Ferretería'
-        ILUMINACION = 'iluminacion', 'Iluminación'
 
     # --- Identificación ---
     sku = models.CharField(
@@ -56,7 +66,8 @@ class Producto(models.Model):
     nombre = models.CharField('Título', max_length=150)
 
     # --- Clasificación y precio (campos del formulario del diseño) ---
-    categoria = models.CharField(max_length=20, choices=Categoria.choices, default=Categoria.ELECTRICOS)
+        # PROTECT: no se puede borrar una categoría que todavía tiene productos
+    categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, related_name='productos')
     proveedor = models.ForeignKey(
         Proveedor, on_delete=models.PROTECT,
         null=True, blank=True, related_name='productos',
@@ -94,6 +105,10 @@ class Producto(models.Model):
     def __str__(self):
         return f'{self.sku} - {self.nombre}'
 
+    def get_categoria_display(self):
+        """Compatibilidad: inicio.html, producto_detalle.html y la lista siguen usando este nombre."""
+        return self.categoria.nombre
+
     def porcentaje_descuento(self):
         """Devuelve el % de descuento (ej: 23) o 0 si no tiene oferta."""
         if self.precio_oferta and self.precio:
@@ -121,3 +136,50 @@ class Producto(models.Model):
             raise ValidationError({
                 'precio_oferta': 'El precio de oferta debe ser menor al precio normal.'
             })
+
+        
+
+
+class MovimientoInventario(models.Model):
+    """G1-149: historial de movimientos de stock. Cada entrada de mercancía deja un registro."""
+
+    class Tipo(models.TextChoices):
+        ENTRADA = 'entrada', 'Entrada'
+        SALIDA = 'salida', 'Salida'  # reservado: lo usarán otras historias (p. ej. anular una orden de compra)
+
+    producto = models.ForeignKey(Producto, on_delete=models.PROTECT, related_name='movimientos')
+    tipo = models.CharField(max_length=10, choices=Tipo.choices, default=Tipo.ENTRADA)
+    cantidad = models.PositiveIntegerField()  # siempre positiva; el tipo indica si suma o resta
+    stock_resultante = models.PositiveIntegerField()  # stock del producto justo después del movimiento
+    observacion = models.CharField('Observación', max_length=200, blank=True)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='movimientos_inventario',
+    )
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-fecha', '-id']
+        verbose_name = 'Movimiento de inventario'
+        verbose_name_plural = 'Movimientos de inventario'
+
+    def __str__(self):
+        signo = '+' if self.tipo == self.Tipo.ENTRADA else '-'
+        return f'{self.producto} {signo}{self.cantidad}'
+
+    @classmethod
+    def registrar_entrada(cls, producto, cantidad, usuario=None, observacion=''):
+        """Suma `cantidad` al stock del producto y guarda el movimiento, todo en una sola transacción."""
+        if cantidad is None or cantidad < 1:
+            raise ValueError('La cantidad debe ser mayor a 0.')
+        with transaction.atomic():
+            # Se vuelve a leer el producto bloqueándolo, para no pisar otra entrada simultánea
+            producto = Producto.objects.select_for_update().get(pk=producto.pk)
+            if not producto.activo:
+                raise ValueError('No se puede registrar entrada en un producto inactivo.')
+            producto.stock += cantidad
+            producto.save(update_fields=['stock', 'actualizado_en'])
+            return cls.objects.create(
+                producto=producto, tipo=cls.Tipo.ENTRADA, cantidad=cantidad,
+                stock_resultante=producto.stock, usuario=usuario, observacion=observacion,
+            )

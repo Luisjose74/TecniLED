@@ -4,6 +4,75 @@
    Aquí solo va lo que Tailwind (por CDN) no hace fácil.
    ========================================================= */
 
+
+/* ---------- Variables de la guía de estilo (docs/guia_estilo.md) ----------
+   Si cambia un color de TECNILED, se cambia aquí y no en cada archivo. */
+:root {
+  --color-primario: #F2AE30;
+  --color-primario-hover: #d99b28;
+  --color-texto-sobre-primario: #000000;
+
+  --color-texto: #111827;             /* gray-900 */
+  --color-texto-secundario: #6B7280;  /* gray-500 */
+  --color-fondo: #FFFFFF;
+  --color-fondo-suave: #F9FAFB;       /* gray-50 */
+  --color-borde: #E5E7EB;             /* gray-200 */
+
+  --color-exito: #047857;             /* emerald-700 */
+  --color-error: #B91C1C;             /* red-700 */
+  --color-advertencia: #92400E;       /* amber-800 */
+  --color-informacion: #1D4ED8;       /* blue-700 */
+  --color-peligro: #DC2626;           /* red-600, botones de acciones irreversibles */
+
+  --radio-borde: 0.75rem;             /* rounded-xl */
+}
+
+/* En modo oscuro solo cambian los textos, fondos y bordes */
+.dark {
+  --color-texto: #FFFFFF;
+  --color-texto-secundario: #9CA3AF;  /* gray-400 */
+  --color-fondo: #1F2937;             /* gray-800 */
+  --color-fondo-suave: #111827;       /* gray-900 */
+  --color-borde: #374151;             /* gray-700 */
+}
+
+/* ---------- Clases reutilizables de botones ----------
+   Ejemplo: <button class="btn-principal">Guardar</button> */
+.btn-principal,
+.btn-secundario,
+.btn-peligro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: var(--radio-borde);
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: background-color 0.2s;
+}
+.btn-principal {
+  background-color: var(--color-primario);
+  color: var(--color-texto-sobre-primario);
+}
+.btn-principal:hover {
+  background-color: var(--color-primario-hover);
+}
+.btn-secundario {
+  border: 1px solid var(--color-borde);
+  color: var(--color-texto);
+  font-weight: 600;
+}
+.btn-secundario:hover {
+  background-color: var(--color-fondo-suave);
+}
+.btn-peligro {
+  background-color: var(--color-peligro);
+  color: #FFFFFF;
+}
+.btn-peligro:hover {
+  background-color: #B91C1C;          /* red-700 */
+}
 /* Scroll suave al tocar enlaces como #ofertas o #contacto */
 html {
   scroll-behavior: smooth;
@@ -11,8 +80,8 @@ html {
 
 /* Color de la selección de texto (amarillo TECNILED) */
 ::selection {
-  background: #F2AE30;
-  color: #000;
+  background: var(--color-primario);
+  color: var(--color-texto-sobre-primario);
 }
 
 /* ---------- Cuadrícula de fondo del hero ---------- */

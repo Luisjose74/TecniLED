@@ -11,17 +11,17 @@
 <aside id="carrito" class="fixed top-0 right-0 h-full w-full sm:w-[450px] bg-white dark:bg-gray-900 z-[70] shadow-2xl flex flex-col translate-x-full transition-transform duration-300">
   <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800">
     <h2 class="text-xl font-black text-gray-900 dark:text-white flex items-center gap-3">
-      <svg class="w-6 h-6 text-[#F2AE30]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+      <svg aria-hidden="true" class="w-6 h-6 text-[#F2AE30]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
       Tu carrito
     </h2>
-    <button type="button" onclick="cerrarCarrito()" aria-label="Cerrar carrito" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500">
-      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    <button type="button" onclick="cerrarCarrito()"aria-label="Cerrar carrito" title="Cerrar carrito" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500">
+      <svg aria-hidden="true" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
     </button>
   </div>
 
   <div class="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 space-y-4">
     <div class="w-24 h-24 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-2">
-      <svg class="w-10 h-10 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+      <svg aria-hidden="true" class="w-10 h-10 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
     </div>
     <p class="font-medium text-lg">Tu carrito está vacío</p>
     <a href="#ofertas" onclick="cerrarCarrito()" class="text-sky-500 font-bold hover:underline">Empezar a comprar</a>

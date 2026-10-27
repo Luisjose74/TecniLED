@@ -1,0 +1,152 @@
+{% extends 'admin_base.html' %}
+{% block title %}Gestión de categorías - TECNILED{% endblock %}
+{% block titulo_seccion %}Gestión de categorías{% endblock %}
+{% block migas_actual %}Gestión de categorías{% endblock %}
+{% block content %}
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+
+  <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between items-center">
+    <form method="get" class="flex w-full sm:w-auto gap-4">
+      <div class="relative flex-1 sm:w-64">
+        <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+        <input
+          type="text"
+          name="q"
+          value="{{ query }}"
+          placeholder="Buscar categoría..."
+          class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-[#F2AE30] outline-none transition-shadow text-gray-900 dark:text-white"
+        >
+      </div>
+    </form>
+
+    <button type="button" id="btn-nueva-categoria" class="w-full sm:w-auto px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-sky-500/20">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Añadir Categoría
+    </button>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse min-w-[500px]">
+      <thead>
+        <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm border-b border-gray-100 dark:border-gray-700">
+          <th class="p-4 font-semibold">Categoría</th>
+          <th class="p-4 font-semibold">Productos</th>
+          <th class="p-4 font-semibold text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for c in categorias %}
+        <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+          <td class="p-4">
+            <span class="font-semibold text-gray-900 dark:text-white">{{ c.nombre }}</span>
+          </td>
+          <td class="p-4">
+            {# Lleva a la lista de productos ya filtrada por esta categoría #}
+            <a href="{% url 'productos_lista' %}?categoria={{ c.pk }}" class="inline-flex px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-semibold rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+              {{ c.total_productos }} producto{{ c.total_productos|pluralize }}
+            </a>
+          </td>
+          <td class="p-4">
+            <div class="flex items-center justify-end gap-2">
+              <button type="button" title="Editar" data-editar-url="{% url 'editar_categoria' c.pk %}" data-nombre="{{ c.nombre }}" class="js-editar-categoria p-2 text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-500/10 rounded-lg transition-colors inline-flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="3" class="p-8 text-center text-gray-500">No se encontraron categorías.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+{# Modal para crear / editar (un solo formulario que cambia de título y de URL) #}
+<div id="modal-categoria" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center p-4"
+     data-abrir="{{ modal_abierto }}"
+     data-url-crear="{% url 'crear_categoria' %}"
+     data-url-editar="{% if categoria_editada %}{% url 'editar_categoria' categoria_editada.pk %}{% endif %}"
+     role="dialog" aria-modal="true" aria-labelledby="modal-categoria-titulo">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
+    <h2 id="modal-categoria-titulo" class="text-xl font-bold text-gray-900 dark:text-white mb-4"></h2>
+
+    <form id="form-categoria" method="post">
+      {% csrf_token %}
+      <label for="{{ form.nombre.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ form.nombre.label }}</label>
+      {{ form.nombre }}
+      <div id="errores-categoria">
+        {% for error in form.nombre.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="flex gap-3 justify-end mt-6">
+        <button type="button" id="cancelar-categoria"
+          class="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          Cancelar
+        </button>
+        <button type="submit" id="guardar-categoria"
+          class="px-5 py-2.5 rounded-xl bg-[#F2AE30] text-black font-semibold hover:brightness-95 transition disabled:opacity-50 disabled:cursor-not-allowed">
+          Guardar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  var modal = document.getElementById('modal-categoria');
+  var form = document.getElementById('form-categoria');
+  var titulo = document.getElementById('modal-categoria-titulo');
+  var input = document.getElementById('{{ form.nombre.id_for_label }}');
+  var errores = document.getElementById('errores-categoria');
+  var btnGuardar = document.getElementById('guardar-categoria');
+
+  // conservar = true: el servidor devolvió un error y el campo ya trae lo que escribió la persona
+  function abrir(modo, url, nombre, conservar) {
+    form.action = url;
+    titulo.textContent = modo === 'crear' ? 'Añadir Categoría' : 'Editar Categoría';
+    if (!conservar) {
+      input.value = nombre || '';
+      errores.innerHTML = '';
+    }
+    btnGuardar.disabled = false;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    input.focus();
+  }
+
+  function cerrar() {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  document.getElementById('btn-nueva-categoria').addEventListener('click', function () {
+    abrir('crear', '{% url "crear_categoria" %}', '', false);
+  });
+  document.querySelectorAll('.js-editar-categoria').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      abrir('editar', btn.dataset.editarUrl, btn.dataset.nombre, false);
+    });
+  });
+
+  form.addEventListener('submit', function () { btnGuardar.disabled = true; }); // evita doble envío
+  document.getElementById('cancelar-categoria').addEventListener('click', cerrar);
+  modal.addEventListener('click', function (e) { if (e.target === modal) cerrar(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !modal.classList.contains('hidden')) cerrar();
+  });
+
+    // Si el servidor devolvió un error al guardar, se reabre el modal con el mensaje
+  if (modal.dataset.abrir === 'crear') {
+    abrir('crear', modal.dataset.urlCrear, '', true);
+  } else if (modal.dataset.abrir === 'editar') {
+    abrir('editar', modal.dataset.urlEditar, '', true);
+  }
+  
+})();
+</script>
+{% endblock %}

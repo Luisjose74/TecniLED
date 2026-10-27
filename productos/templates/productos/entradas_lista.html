@@ -1,0 +1,163 @@
+{% extends 'admin_base.html' %}
+{% block title %}Entradas de inventario - TECNILED{% endblock %}
+{% block titulo_seccion %}Entradas de inventario{% endblock %}
+{% block migas_actual %}Entradas de inventario{% endblock %}
+{% block content %}
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+
+  <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between items-center">
+    <form method="get" class="flex w-full sm:w-auto gap-4">
+      <div class="relative flex-1 sm:w-64">
+        <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+        <input
+          type="text"
+          name="q"
+          value="{{ query }}"
+          placeholder="Buscar por producto o SKU..."
+          class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-[#F2AE30] outline-none transition-shadow text-gray-900 dark:text-white"
+        >
+      </div>
+    </form>
+
+    <button type="button" id="btn-nueva-entrada" class="w-full sm:w-auto px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-sky-500/20">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Registrar Entrada
+    </button>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse min-w-[700px]">
+      <thead>
+        <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm border-b border-gray-100 dark:border-gray-700">
+          <th class="p-4 font-semibold">Fecha</th>
+          <th class="p-4 font-semibold">Producto</th>
+          <th class="p-4 font-semibold">Cantidad</th>
+          <th class="p-4 font-semibold">Stock resultante</th>
+          <th class="p-4 font-semibold">Registrado por</th>
+          <th class="p-4 font-semibold">Observación</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for m in movimientos %}
+        <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+          <td class="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{{ m.fecha|date:"d/m/Y H:i" }}</td>
+          <td class="p-4">
+            <p class="font-semibold text-gray-900 dark:text-white line-clamp-1">{{ m.producto.nombre }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">ID: {{ m.producto.sku }}</p>
+          </td>
+          <td class="p-4">
+            <span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">+{{ m.cantidad }}</span>
+          </td>
+          <td class="p-4 font-semibold text-gray-900 dark:text-white">{{ m.stock_resultante }}</td>
+          <td class="p-4 text-sm text-gray-600 dark:text-gray-300">{{ m.usuario.email|default:"—" }}</td>
+          <td class="p-4 text-sm text-gray-500 dark:text-gray-400">{{ m.observacion|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="p-8 text-center text-gray-500">Aún no hay entradas registradas.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if movimientos.has_other_pages %}
+  <div class="p-4 flex justify-center gap-2 border-t border-gray-100 dark:border-gray-700">
+    {% if movimientos.has_previous %}
+      <a href="?q={{ query|urlencode }}&page={{ movimientos.previous_page_number }}" class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Anterior</a>
+    {% endif %}
+    <span class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">Página {{ movimientos.number }} de {{ movimientos.paginator.num_pages }}</span>
+    {% if movimientos.has_next %}
+      <a href="?q={{ query|urlencode }}&page={{ movimientos.next_page_number }}" class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Siguiente</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+
+{# Modal para registrar la entrada #}
+<div id="modal-entrada" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center p-4"
+     data-abrir="{% if abrir_modal %}si{% endif %}"
+     role="dialog" aria-modal="true" aria-labelledby="modal-entrada-titulo">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
+    <div class="mb-4">
+      <h2 id="modal-entrada-titulo" class="text-xl font-bold text-gray-900 dark:text-white">Registrar Entrada</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Indica el producto y la cantidad que llegó. El stock se suma automáticamente.</p>
+    </div>
+
+    <form id="form-entrada" method="post" action="{% url 'registrar_entrada' %}" class="space-y-4">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-sm text-red-600 dark:text-red-400">
+        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+      </div>
+      {% endif %}
+
+      <div>
+        <label for="{{ form.producto.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ form.producto.label }}</label>
+        {{ form.producto }}
+        {% for error in form.producto.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div>
+        <label for="{{ form.cantidad.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ form.cantidad.label }}</label>
+        {{ form.cantidad }}
+        {% for error in form.cantidad.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div>
+        <label for="{{ form.observacion.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ form.observacion.label }}</label>
+        {{ form.observacion }}
+        {% for error in form.observacion.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="flex gap-3 justify-end pt-2">
+        <button type="button" id="cancelar-entrada"
+          class="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          Cancelar
+        </button>
+        <button type="submit" id="guardar-entrada"
+          class="px-5 py-2.5 rounded-xl bg-[#F2AE30] text-black font-semibold hover:brightness-95 transition disabled:opacity-50 disabled:cursor-not-allowed">
+          Registrar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  var modal = document.getElementById('modal-entrada');
+  var form = document.getElementById('form-entrada');
+  var btnGuardar = document.getElementById('guardar-entrada');
+
+  function abrir(limpiar) {
+    if (limpiar) {
+      form.reset();
+      // quita los mensajes de error que haya dejado un intento anterior
+      form.querySelectorAll('.text-red-500, .bg-red-50').forEach(function (el) { el.remove(); });
+    }
+    btnGuardar.disabled = false;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    form.querySelector('select').focus();
+  }
+
+  function cerrar() {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  document.getElementById('btn-nueva-entrada').addEventListener('click', function () { abrir(true); });
+  form.addEventListener('submit', function () { btnGuardar.disabled = true; }); // evita registrar dos veces
+  document.getElementById('cancelar-entrada').addEventListener('click', cerrar);
+  modal.addEventListener('click', function (e) { if (e.target === modal) cerrar(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !modal.classList.contains('hidden')) cerrar();
+  });
+
+  // Si el servidor devolvió un error al guardar, se reabre el modal con los mensajes
+  if (modal.dataset.abrir === 'si') { abrir(false); }
+})();
+</script>
+{% endblock %}

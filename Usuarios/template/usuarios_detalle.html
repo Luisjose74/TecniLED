@@ -11,15 +11,15 @@
         <h2 class="text-xl font-bold text-gray-900 dark:text-white">Detalle de usuario</h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ usuario.email }}</p>
       </div>
-      <a href="{% url 'usuarios_lista' %}" title="Volver al listado" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors">
-        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      <a href="{% url 'usuarios_lista' %}" title="Volver al listado" aria-label="Volver al listado" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors">
+        <svg aria-hidden="true" class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </a>
     </div>
 
     <dl class="space-y-3 text-sm">
       <div class="flex justify-between gap-4 border-b border-gray-100 dark:border-gray-700 pb-2">
         <dt class="font-semibold text-gray-600 dark:text-gray-400">Nombre</dt>
-        <dd class="text-gray-900 dark:text-white text-right">{{ usuario.first_name }} {{ usuario.last_name }}</dd>
+        <dd class="text-gray-900 dark:text-white text-right">{{ usuario.get_full_name|default:"Sin nombre" }}</dd>
       </div>
       <div class="flex justify-between gap-4 border-b border-gray-100 dark:border-gray-700 pb-2">
         <dt class="font-semibold text-gray-600 dark:text-gray-400">Correo</dt>
@@ -47,6 +47,10 @@
           </span>
         </dd>
       </div>
+      <div class="flex justify-between gap-4 border-b border-gray-100 dark:border-gray-700 pb-2">
+        <dt class="font-semibold text-gray-600 dark:text-gray-400">Miembro desde</dt>
+        <dd class="text-gray-900 dark:text-white text-right">{{ usuario.date_joined|date:"d/m/Y" }}</dd>
+      </div>
       <div class="flex justify-between gap-4">
         <dt class="font-semibold text-gray-600 dark:text-gray-400">Último ingreso</dt>
         <dd class="text-gray-900 dark:text-white text-right">{{ usuario.last_login|date:"d/m/Y H:i"|default:"Nunca" }}</dd>
@@ -62,9 +66,9 @@
         
         {% if usuario.estado_cuenta == 'activa' and usuario != request.user %}
         <form method="post" action="{% url 'inactivar_usuario' usuario.id %}" class="flex-1"
-              onsubmit="return confirm('¿Seguro que quieres inactivar a {{ usuario.email|escapejs }}?');">
+              data-confirmar="¿Seguro que quieres inactivar a {{ usuario.email }}? No podrá iniciar sesión hasta que se reactive.">
           {% csrf_token %}
-          <button type="submit" class="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-colors">
+          <button type="submit" class="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold transition-colors">
             Inactivar usuario
           </button>
         </form>
@@ -77,7 +81,7 @@
 
       <!-- Botón de Editar -->
       <div>
-        <a href="{% url 'editar_rol' usuario.id %}" class="w-full block py-2.5 rounded-xl bg-[#F2AE30] hover:bg-[#d99b28] text-white text-sm font-bold transition-colors shadow-lg shadow-[#F2AE30]/20 text-center">
+        <a href="{% url 'editar_rol' usuario.id %}" class="w-full block py-2.5 rounded-xl bg-[#F2AE30] hover:bg-[#d99b28] text-black text-sm font-bold transition-colors shadow-lg shadow-[#F2AE30]/20 text-center">
           Editar
         </a>
       </div>

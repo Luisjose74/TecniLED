@@ -1,0 +1,120 @@
+{% extends 'admin_base.html' %}
+{% block title %}Órdenes de compra - TECNILED{% endblock %}
+{% block titulo_seccion %}Compras a proveedores{% endblock %}
+{% block migas_actual %}Órdenes de compra{% endblock %}
+{% block content %}
+<div
+    class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+
+    <div
+        class="p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between items-center">
+        <form method="get" class="relative w-full sm:w-96">
+            <svg aria-hidden="true"
+                class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"><path
+                    stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" /></svg>
+            <input type="text" name="q" value="{{ query }}"
+                placeholder="Buscar por factura, fecha (dd/mm/aaaa) o proveedor..."
+                class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-[#F2AE30] outline-none text-gray-900 dark:text-white">
+        </form>
+
+        <a href="{% url 'crear_orden' %}"
+            class="w-full sm:w-auto px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-sky-500/20">
+            <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24"><path stroke-linecap="round"
+                    stroke-linejoin="round" stroke-width="2"
+                    d="M12 4v16m8-8H4" /></svg>
+            Nueva orden
+        </a>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse min-w-[700px]">
+            <thead>
+                <tr
+                    class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm border-b border-gray-100 dark:border-gray-700">
+                    <th class="p-4 font-semibold">N.º orden/factura</th>
+                    <th class="p-4 font-semibold">Fecha</th>
+                    <th class="p-4 font-semibold">Proveedor</th>
+                    <th class="p-4 font-semibold">Total</th>
+                    <th class="p-4 font-semibold">Estado</th>
+                    <th class="p-4 font-semibold text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                {% for o in ordenes %}
+                <tr
+                    class="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                    <td
+                        class="p-4 font-semibold text-gray-900 dark:text-white">{{ o.numero_factura }}</td>
+                    <td class="p-4 text-gray-600 dark:text-gray-300">{{ o.fecha|date:"d/m/Y" }}</td>
+                    <td class="p-4 text-gray-600 dark:text-gray-300">{{ o.proveedor.nombre }}</td>
+                    <td
+                        class="p-4 font-medium text-gray-900 dark:text-white">${{ o.total|floatformat:2 }}</td>
+                    <td class="p-4">
+                        <span
+                            class="inline-flex px-2 py-1 rounded-full text-xs font-medium
+                        {% if o.estado == 'pendiente' %}bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400
+                            {% elif o.estado == 'recibida' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400
+                        {% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                            {{ o.get_estado_display }}
+                        </span>
+                    </td>
+                    <td class="p-4">
+                        <div class="flex items-center justify-end gap-1">
+                            {# Provisional: en el Paso 5 este href se cambia por el detalle de la orden #}
+                            <a href="#" title="Ver detalle" aria-label="Ver detalle"
+                                class="inline-flex items-center justify-center w-8 h-8 text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-500/10 rounded-lg transition-colors">
+                                <svg aria-hidden="true" class="w-4 h-4" fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"><path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round" stroke-width="2"
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="p-8 text-center text-gray-500">
+                        {% if query %}
+                        No se encontraron órdenes de compra que coincidan con
+                        "{{ query }}".
+                        <a href="{% url 'ordenes_lista' %}"
+                            class="text-sky-500 hover:underline font-semibold ml-1">Ver
+                            todas</a>
+                        {% else %}
+                        Aún no hay órdenes de compra registradas.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if ordenes.has_other_pages %}
+    <div
+        class="p-4 flex justify-center gap-2 border-t border-gray-100 dark:border-gray-700">
+        {% if ordenes.has_previous %}
+        <a
+            href="?q={{ query|urlencode }}&page={{ ordenes.previous_page_number }}"
+            class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Anterior</a>
+        {% endif %}
+        <span
+            class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">Página
+            {{ ordenes.number }} de {{ ordenes.paginator.num_pages }}</span>
+        {% if ordenes.has_next %}
+        <a href="?q={{ query|urlencode }}&page={{ ordenes.next_page_number }}"
+            class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Siguiente</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

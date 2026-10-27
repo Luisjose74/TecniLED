@@ -1,4 +1,5 @@
 from datetime import timedelta
+from django.core.serializers import python
 from django.test import override_settings
 from django.utils import timezone
 from Usuarios.models import CodigoRecuperacion
@@ -223,7 +224,7 @@ class PlantillasBaseTests(TestCase):
         resp = self.client.get(reverse('crear_usuario'))
         self.assertTemplateUsed(resp, 'admin_base.html')
         self.assertTemplateNotUsed(resp, 'base.html')
-        self.assertContains(resp, 'Nuevo administrador')
+        self.assertContains(resp, 'Nuevo usuario')
                 
     def test_usuarios_editar_rol_usa_admin_base(self):
         # Usuaria a la que el administrador le va a editar el rol
@@ -526,3 +527,165 @@ class InactivarUsuarioTests(TestCase):
         self.client.force_login(self.admin)
         resp = self.client.get(self.url)
         self.assertEqual(resp.status_code, 405)
+        
+class MensajesTests(TestCase):
+    def renderizar(self, nivel, texto):
+        from django.contrib.messages.storage.base import Message
+        from django.template.loader import render_to_string
+
+        return render_to_string(
+            'partials/mensajes.html', {'messages': [Message(nivel, texto)]}
+        )
+
+    def test_cada_tipo_tiene_su_color(self):
+        from django.contrib.messages import constants
+
+        self.assertIn('bg-emerald-50', self.renderizar(constants.SUCCESS, 'Guardado'))
+        self.assertIn('bg-red-50', self.renderizar(constants.ERROR, 'Falló'))
+        self.assertIn('bg-amber-50', self.renderizar(constants.WARNING, 'Cuidado'))
+        self.assertIn('bg-blue-50', self.renderizar(constants.INFO, 'Dato'))
+
+    def test_mensaje_es_accesible_y_se_puede_cerrar(self):
+        from django.contrib.messages import constants
+
+        html = self.renderizar(constants.SUCCESS, 'Guardado')
+        self.assertIn('role="alert"', html)
+        self.assertIn('aria-label="Cerrar mensaje"', html)
+        
+class ModalConfirmacionTests(TestCase):
+    def setUp(self):
+        self.admin = Usuario.objects.create_user(
+            username='admin_modal@test.com', email='admin_modal@test.com',
+            password='Prueba123!', rol=Usuario.Rol.ADMINISTRADOR,
+        )
+        self.usuario = Usuario.objects.create_user(
+            username='modal@test.com', email='modal@test.com',
+            password='Prueba123!', rol=Usuario.Rol.CLIENTE,
+        )
+        self.client.force_login(self.admin)
+
+    def test_inactivar_usuario_pide_confirmacion_con_el_modal(self):
+        resp = self.client.get(reverse('usuario_detalle', args=[self.usuario.pk]))
+        self.assertContains(resp, 'id="modal-confirmacion"')
+        self.assertContains(resp, 'data-confirmar=')
+        self.assertContains(resp, 'js/confirmar.js')
+        self.assertNotContains(resp, 'return confirm(')
+        
+        
+class TipoDeMensajeTests(TestCase):
+    def test_recuperar_contrasena_muestra_aviso_informativo(self):
+        from django.contrib.messages import get_messages
+
+        resp = self.client.post(reverse('recuperar_contrasena'), {'correo': 'nadie@test.com'})
+        mensajes = list(get_messages(resp.wsgi_request))
+        self.assertEqual(mensajes[0].level_tag, 'info')
+        
+
+class IconosConDescripcionTests(TestCase):
+    """G1-1194: revisa todas las plantillas del proyecto."""
+
+    def plantillas(self):
+        from pathlib import Path
+        from django.conf import settings
+
+        carpeta = Path(settings.BASE_DIR)
+        for archivo in carpeta.rglob('*.html'):
+            if 'venv' not in archivo.parts:
+                yield archivo, archivo.read_text(encoding='utf-8')
+
+    def test_todos_los_iconos_son_decorativos(self):
+        import re
+
+        for archivo, texto in self.plantillas():
+            for svg in re.findall(r'<svg\b[^>]*>', texto):
+                self.assertIn('aria-hidden="true"', svg, f'{archivo.name}: {svg[:60]}')
+
+    def test_botones_solo_con_icono_tienen_descripcion(self):
+        import re
+
+        patron = re.compile(r'<(a|button)\b([^>]*)>(.*?)</\1>', re.S)
+        for archivo, texto in self.plantillas():
+            for etiqueta in patron.finditer(texto):
+                atributos, contenido = etiqueta.group(2), etiqueta.group(3)
+                if '<svg' not in contenido:
+                    continue
+                sin_iconos = re.sub(r'<svg.*?</svg>', '', contenido, flags=re.S)
+                texto_visible = re.sub(r'<[^>]+>', '', sin_iconos)
+                texto_visible = re.sub(r'{%.*?%}|{{.*?}}', 'x', texto_visible).strip()
+                if texto_visible:
+                    continue
+                self.assertIn('aria-label=', atributos, f'{archivo.name}: {atributos[:60]}')
+                self.assertIn('title=', atributos, f'{archivo.name}: {atributos[:60]}')
+                
+                
+class ContrasteTests(TestCase):
+    """G1-1208: combinaciones de color que no cumplen el contraste mínimo (4.5:1)."""
+
+    def test_no_hay_texto_blanco_sobre_amarillo_ni_sobre_rojo_500(self):
+        import re
+        from pathlib import Path
+        from django.conf import settings
+
+        for archivo in Path(settings.BASE_DIR).rglob('*.html'):
+            if 'venv' in archivo.parts:
+                continue
+            texto = archivo.read_text(encoding='utf-8')
+            for clases in re.findall(r'class="([^"]*)"', texto):
+                lista = clases.split()
+                if 'text-white' not in lista:
+                    continue
+                self.assertNotIn('bg-[#F2AE30]', lista, f'{archivo.name}: texto blanco sobre amarillo')
+                self.assertNotIn('bg-red-500', lista, f'{archivo.name}: texto blanco sobre red-500')
+
+
+class IdiomaYZonaHorariaTests(TestCase):
+    def test_formulario_vacio_muestra_error_en_espanol(self):
+        from Usuarios.forms import CrearUsuarioInternoForm
+
+        form = CrearUsuarioInternoForm(data={})
+        self.assertFalse(form.is_valid())
+        self.assertIn('Este campo es obligatorio.', form.errors['email'])
+
+    def test_zona_horaria_es_bogota(self):
+        self.assertEqual(timezone.get_current_timezone_name(), 'America/Bogota')
+        
+        
+class MigasDePanTests(TestCase):
+    """G1-1192: migas de pan con nivel intermedio y títulos claros."""
+
+    def setUp(self):
+        self.admin = Usuario.objects.create_user(
+            username='luis.silva@tecniled.com', email='luis.silva@tecniled.com',
+            password='Prueba123!', first_name='Luis José', last_name='Silva Fajardo',
+            rol=Usuario.Rol.ADMINISTRADOR,
+        )
+        self.client.force_login(self.admin)
+
+    def test_migas_son_navegacion_accesible(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'aria-label="Migas de pan"')
+        self.assertContains(resp, 'aria-current="page"')
+
+    def test_titulo_pestana_usuarios(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, '<title>Gestión de usuarios - TECNILED</title>')
+
+    def test_crear_usuario_tiene_miga_a_la_lista(self):
+        resp = self.client.get(reverse('crear_usuario'))
+        self.assertTemplateUsed(resp, 'partials/miga.html')
+        self.assertContains(resp, 'href="' + reverse('usuarios_lista') + '"')
+        self.assertContains(resp, 'Nuevo usuario')
+
+    def test_registrar_producto_tiene_miga_a_la_lista(self):
+        resp = self.client.get(reverse('crear_producto'))
+        self.assertTemplateUsed(resp, 'partials/miga.html')
+        self.assertContains(resp, 'Registrar producto')
+
+    def test_registrar_proveedor_tiene_miga_a_la_lista(self):
+        resp = self.client.get(reverse('crear_proveedor'))
+        self.assertTemplateUsed(resp, 'partials/miga.html')
+        self.assertContains(resp, 'Registrar proveedor')
+
+    def test_lista_no_tiene_miga_intermedia(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertTemplateNotUsed(resp, 'partials/miga.html')

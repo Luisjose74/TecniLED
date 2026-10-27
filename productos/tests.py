@@ -9,16 +9,13 @@ from django.urls import reverse
 from PIL import Image
 
 from Usuarios.models import Usuario
-from productos.models import Producto
-
 from productos.models import Proveedor
 
-
 from datetime import timedelta
-
 from django.utils import timezone
-
 from productos.forms import ProductoForm
+
+from productos.models import Categoria, MovimientoInventario, Producto
 
 # Las imágenes de los tests se guardan aquí y se borran al terminar
 MEDIA_TEMPORAL = tempfile.mkdtemp()
@@ -39,11 +36,14 @@ def crear_usuario(correo, rol):
         username=correo, email=correo, password='Prueba123!', rol=rol
     )
 
+def categoria(nombre):
+    """Devuelve la categoría con ese nombre (las 4 iniciales las crea la migración)."""
+    return Categoria.objects.get_or_create(nombre=nombre)[0]
 
 def crear_producto_bd(**overrides):
     datos = {
         'sku': 'E1', 'nombre': 'Cable THW Calibre 12',
-        'categoria': Producto.Categoria.ELECTRICOS, 'precio': '45.00', 'stock': 50,
+        'categoria': categoria('Eléctricos'), 'precio': '45.00', 'stock': 50,
         'descripcion': 'Cable de cobre.', 'instalacion': 'Pelar los extremos.',
     }
     datos.update(overrides)
@@ -53,14 +53,16 @@ def crear_producto_bd(**overrides):
 class ProductoModeloTests(TestCase):
     def test_precio_oferta_menor_al_precio_es_valido(self):
         p = Producto(
-            sku='M1', nombre='X', precio='15.50', precio_oferta='12.00', stock=1,
+            categoria=categoria('Eléctricos'), sku='M1', nombre='X',
+            precio='15.50', precio_oferta='12.00', stock=1,
             descripcion='d', instalacion='i',
         )
         p.full_clean()  # no debe lanzar excepción
 
     def test_precio_oferta_mayor_o_igual_al_precio_es_invalido(self):
         p = Producto(
-            sku='M2', nombre='X', precio='10.00', precio_oferta='10.00', stock=1,
+            categoria=categoria('Eléctricos'), sku='M2', nombre='X',
+            precio='10.00', precio_oferta='10.00', stock=1,
             descripcion='d', instalacion='i',
         )
         with self.assertRaises(ValidationError) as ctx:
@@ -84,7 +86,7 @@ class RegistrarProductoTests(TestCase):
     def datos_validos(self, **overrides):
         datos = {
             'sku': 'E1', 'nombre': 'Cable THW Calibre 12',
-            'categoria': Producto.Categoria.ELECTRICOS,
+            'categoria': categoria('Eléctricos').pk,
             'precio': '45.00', 'precio_oferta': '', 'stock': '50',
             'descripcion': 'Cable de cobre suave.', 'instalacion': 'Pelar los extremos.',
         }
@@ -168,7 +170,7 @@ class CargarImagenTests(TestCase):
     def datos(self, **overrides):
         datos = {
             'sku': 'I1', 'nombre': 'Lámpara Colgante Moderna',
-            'categoria': Producto.Categoria.INTERIORES,
+            'categoria': categoria('Interiores').pk,
             'precio': '65.00', 'precio_oferta': '', 'stock': '8',
             'descripcion': 'Lámpara.', 'instalacion': 'Colgar del techo.',
         }
@@ -210,7 +212,7 @@ class BuscarProductosTests(TestCase):
         crear_producto_bd(sku='E1', nombre='Cable THW Calibre 12')
         crear_producto_bd(
             sku='I1', nombre='Lámpara Colgante Moderna',
-            categoria=Producto.Categoria.INTERIORES,
+            categoria=categoria('Interiores'),
         )
         self.client.force_login(self.admin)
 
@@ -238,7 +240,7 @@ class BuscarProductosTests(TestCase):
         self.assertContains(resp, 'Lámpara Colgante Moderna')
 
     def test_filtro_por_categoria(self):
-        resp = self.client.get(reverse('productos_lista'), {'categoria': 'interiores'})
+        resp = self.client.get(reverse('productos_lista'), {'categoria': categoria('Interiores').pk})
         self.assertContains(resp, 'Lámpara Colgante Moderna')
         self.assertNotContains(resp, 'Cable THW Calibre 12')
 
@@ -249,7 +251,7 @@ class BuscarProductosTests(TestCase):
 
     def test_busqueda_y_categoria_se_combinan(self):
         resp = self.client.get(
-            reverse('productos_lista'), {'q': 'Cable', 'categoria': 'interiores'}
+            reverse('productos_lista'), {'q': 'Cable', 'categoria': categoria('Interiores').pk}
         )
         self.assertContains(resp, 'No se encontraron productos.')
 
@@ -663,3 +665,133 @@ class ReactivarProveedorTests(TestCase):
         self.assertEqual(self.client.post(self.url).status_code, 302)
         self.proveedor.refresh_from_db()
         self.assertFalse(self.proveedor.activo)
+
+class CategoriaTests(TestCase):
+    """G1-151: crear y editar categorías."""
+
+    def setUp(self):
+        self.client.force_login(crear_usuario('cat@t.com', Usuario.Rol.ADMINISTRADOR))
+
+    def test_lista_muestra_categorias_y_cantidad_de_productos(self):
+        crear_producto_bd(sku='C1', nombre='Uno')
+        r = self.client.get(reverse('categorias_lista'))
+        self.assertContains(r, 'Eléctricos')
+        self.assertContains(r, '1 producto\n')
+
+    def test_crear_categoria_limpia_espacios(self):
+        r = self.client.post(reverse('crear_categoria'), {'nombre': '  Herramientas   manuales '})
+        self.assertRedirects(r, reverse('categorias_lista'))
+        self.assertTrue(Categoria.objects.filter(nombre='Herramientas manuales').exists())
+
+    def test_crear_con_errores_no_guarda_y_reabre_el_modal(self):
+        for dato, mensaje in [('', 'obligatorio'), ('a', 'al menos 2'), ('x' * 61, '60 caracteres'),
+                              ('ELÉCTRICOS', 'Ya existe')]:
+            cantidad = Categoria.objects.count()
+            r = self.client.post(reverse('crear_categoria'), {'nombre': dato})
+            self.assertContains(r, mensaje)
+            self.assertContains(r, 'data-abrir="crear"')
+            self.assertEqual(Categoria.objects.count(), cantidad)
+
+    def test_editar_categoria_y_el_producto_conserva_el_vinculo(self):
+        c = categoria('Eléctricos')
+        p = crear_producto_bd(sku='C2')
+        r = self.client.post(reverse('editar_categoria', args=[c.pk]), {'nombre': 'Eléctricos plus'})
+        self.assertRedirects(r, reverse('categorias_lista'))
+        p.refresh_from_db()
+        self.assertEqual(p.get_categoria_display(), 'Eléctricos plus')
+
+    def test_editar_con_su_mismo_nombre_es_valido_pero_con_el_de_otra_no(self):
+        c = categoria('Interiores')
+        r = self.client.post(reverse('editar_categoria', args=[c.pk]), {'nombre': 'Interiores'})
+        self.assertRedirects(r, reverse('categorias_lista'))
+        r = self.client.post(reverse('editar_categoria', args=[c.pk]), {'nombre': 'ferretería'})
+        self.assertContains(r, 'Ya existe')
+
+    def test_categoria_nueva_se_asigna_a_un_producto_y_filtra(self):
+        self.client.post(reverse('crear_categoria'), {'nombre': 'Seguridad'})
+        c = Categoria.objects.get(nombre='Seguridad')
+        self.client.post(reverse('crear_producto'), {
+            'sku': 'S1', 'nombre': 'Cámara', 'categoria': c.pk, 'precio': '10',
+            'stock': '1', 'descripcion': 'd', 'instalacion': 'i',
+        })
+        self.assertContains(self.client.get(reverse('productos_lista'), {'categoria': c.pk}), 'Cámara')
+        self.assertNotContains(
+            self.client.get(reverse('productos_lista'), {'categoria': categoria('Interiores').pk}), 'Cámara')
+
+    def test_solo_post_y_permisos(self):
+        self.assertEqual(self.client.get(reverse('crear_categoria')).status_code, 405)
+        self.client.force_login(crear_usuario('cli@t.com', Usuario.Rol.CLIENTE))
+        self.assertEqual(self.client.get(reverse('categorias_lista')).status_code, 403)
+        self.assertEqual(self.client.post(reverse('crear_categoria'), {'nombre': 'Hack'}).status_code, 403)
+
+
+
+class EntradaInventarioTests(TestCase):
+    """G1-149: registrar entradas de mercancía."""
+
+    def setUp(self):
+        self.usuario = crear_usuario('ent@t.com', Usuario.Rol.ADMINISTRADOR)
+        self.client.force_login(self.usuario)
+        self.p = crear_producto_bd(sku='E1', nombre='Foco', stock=10)
+
+    def registrar(self, **cambios):
+        datos = {'producto': self.p.pk, 'cantidad': '5', 'observacion': ''}
+        datos.update(cambios)
+        return self.client.post(reverse('registrar_entrada'), datos)
+
+    def test_la_entrada_suma_al_stock_y_queda_en_el_historial(self):
+        r = self.registrar(observacion='  Factura   1  ')
+        self.assertRedirects(r, reverse('entradas_lista'))
+        self.p.refresh_from_db()
+        self.assertEqual(self.p.stock, 15)
+        m = MovimientoInventario.objects.get()
+        self.assertEqual((m.cantidad, m.stock_resultante, m.tipo, m.usuario, m.observacion),
+                         (5, 15, 'entrada', self.usuario, 'Factura 1'))
+        r = self.client.get(reverse('entradas_lista'))
+        self.assertContains(r, '+5')
+        self.assertContains(r, 'ent@t.com')
+
+    def test_dos_entradas_seguidas_acumulan(self):
+        self.registrar(cantidad='5')
+        self.registrar(cantidad='3')
+        self.p.refresh_from_db()
+        self.assertEqual(self.p.stock, 18)
+
+    def test_datos_invalidos_no_cambian_el_stock_y_reabren_el_modal(self):
+        casos = [
+            ({'cantidad': '0'}, 'mayor a 0'), ({'cantidad': '-3'}, 'mayor a 0'),
+            ({'cantidad': 'abc'}, 'número entero'), ({'cantidad': ''}, 'Indica la cantidad'),
+            ({'cantidad': '1.5'}, 'número entero'), ({'cantidad': '100001'}, 'no puede superar 100.000'),
+            ({'producto': ''}, 'Selecciona el producto'), ({'producto': '9999'}, 'producto válido'),
+            ({'observacion': 'x' * 201}, '200 caracteres'),
+        ]
+        for cambio, mensaje in casos:
+            r = self.registrar(**cambio)
+            self.assertContains(r, mensaje)
+            self.assertContains(r, 'data-abrir="si"')
+        self.p.refresh_from_db()
+        self.assertEqual(self.p.stock, 10)
+        self.assertEqual(MovimientoInventario.objects.count(), 0)
+
+    def test_un_producto_inactivo_no_recibe_entradas(self):
+        Producto.objects.filter(pk=self.p.pk).update(activo=False)
+        self.assertNotContains(self.client.get(reverse('entradas_lista')), 'Foco (SKU')
+        self.assertContains(self.registrar(), 'producto válido')
+        self.assertEqual(MovimientoInventario.objects.count(), 0)
+        with self.assertRaises(ValueError):
+            MovimientoInventario.registrar_entrada(self.p, 3)
+
+    def test_permisos_y_metodos(self):
+        self.assertEqual(self.client.get(reverse('registrar_entrada')).status_code, 405)
+        self.client.force_login(crear_usuario('inv@t.com', Usuario.Rol.CONTROL_INVENTARIO))
+        self.assertEqual(self.client.get(reverse('entradas_lista')).status_code, 200)
+        self.client.force_login(crear_usuario('cli2@t.com', Usuario.Rol.CLIENTE))
+        self.assertEqual(self.client.get(reverse('entradas_lista')).status_code, 403)
+        self.assertEqual(self.registrar().status_code, 403)
+
+    def test_busqueda_y_paginacion_del_historial(self):
+        for _ in range(12):
+            MovimientoInventario.registrar_entrada(self.p, 1, self.usuario)
+        self.assertContains(self.client.get(reverse('entradas_lista')), 'Página 1 de 2')
+        self.assertContains(self.client.get(reverse('entradas_lista'), {'q': 'E1'}), 'Foco')
+        self.assertNotContains(self.client.get(reverse('entradas_lista'), {'q': 'zzz'}), 'Foco</p>')

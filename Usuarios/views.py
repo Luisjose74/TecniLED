@@ -158,7 +158,7 @@ def recuperar_contrasena(request):
                 )
             # Mismo mensaje exista o no el correo (no revela qué cuentas existen)
             request.session['recuperacion_correo'] = correo
-            messages.success(request, 'Si el correo está registrado, te enviamos un código de recuperación.')
+            messages.info(request, 'Si el correo está registrado, te enviamos un código de recuperación.')
             return redirect('login')  # provisional: en el PASO 3 irá a la pantalla del código
     else:
         form = SolicitarRecuperacionForm()
@@ -182,7 +182,7 @@ def inactivar_usuario(request, usuario_id):
         messages.error(request, 'No puedes inactivar tu propia cuenta.')
     elif usuario.estado_cuenta != Usuario.EstadoCuenta.ACTIVA:
         # Criterio 2: ya está inactivo, se impide la acción
-        messages.error(
+        messages.warning(
             request,
             f'La cuenta de {usuario.email} ya no está activa (estado: {usuario.get_estado_cuenta_display()}).'
         )
