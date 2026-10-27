@@ -14,9 +14,15 @@
       var guardado = localStorage.getItem('theme');
       var oscuro = guardado ? guardado === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
       document.documentElement.classList.add(oscuro ? 'dark' : 'light');
+      // Preferencias de accesibilidad compartidas con la tienda
+      var tamano = localStorage.getItem('fontSize');
+      if (tamano) document.documentElement.style.fontSize = tamano + '%';
+      if (localStorage.getItem('contraste') === 'alto') {
+        document.documentElement.classList.add('alto-contraste');
+      }
     })();
   </script>
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261026">
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
 {# Accesibilidad: permite saltar el menú con el teclado #}
@@ -236,7 +242,9 @@
   })();
 </script>
 
+{% include 'partials/accesibilidad.html' %}
 {% include 'partials/modal_confirmacion.html' %}
+<script src="{% static 'js/main.js' %}"></script>
 <script src="{% static 'js/confirmar.js' %}"></script>
 </body>
 </html>

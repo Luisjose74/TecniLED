@@ -5,23 +5,33 @@
 
 // ---------- 1. MENÚ DE CELULAR ----------
 function toggleMenuMovil() {
-  document.getElementById('menu-movil').classList.toggle('hidden');
+  var menu = document.getElementById('menu-movil');
+  var abrir = document.getElementById('icono-menu-abrir');
+  var cerrar = document.getElementById('icono-menu-cerrar');
+  if (!menu || !abrir || !cerrar) return;
+  menu.classList.toggle('hidden');
   // Cambia el ícono: hamburguesa ↔ X
-  document.getElementById('icono-menu-abrir').classList.toggle('hidden');
-  document.getElementById('icono-menu-cerrar').classList.toggle('hidden');
+  abrir.classList.toggle('hidden');
+  cerrar.classList.toggle('hidden');
 }
 
 
 // ---------- 2. CARRITO LATERAL ----------
 function abrirCarrito() {
-  document.getElementById('carrito').classList.add('abierto');
-  document.getElementById('carrito-fondo').classList.remove('hidden');
+  var carrito = document.getElementById('carrito');
+  var fondo = document.getElementById('carrito-fondo');
+  if (!carrito || !fondo) return;
+  carrito.classList.add('abierto');
+  fondo.classList.remove('hidden');
   document.body.style.overflow = 'hidden';   // evita que la página de atrás haga scroll
 }
 
 function cerrarCarrito() {
-  document.getElementById('carrito').classList.remove('abierto');
-  document.getElementById('carrito-fondo').classList.add('hidden');
+  var carrito = document.getElementById('carrito');
+  var fondo = document.getElementById('carrito-fondo');
+  if (!carrito || !fondo) return;
+  carrito.classList.remove('abierto');
+  fondo.classList.add('hidden');
   document.body.style.overflow = '';
 }
 
@@ -34,16 +44,40 @@ document.addEventListener('keydown', function (evento) {
 
 
 // ---------- 3. ACCESIBILIDAD ----------
+function mostrarPanelAccesibilidad(mostrar) {
+  var panel = document.getElementById('panel-accesibilidad');
+  var boton = document.getElementById('boton-accesibilidad');
+  if (!panel) return;
+
+  panel.classList.toggle('hidden', !mostrar);
+  if (boton) boton.setAttribute('aria-expanded', mostrar ? 'true' : 'false');
+
+  if (mostrar) {
+    var primero = panel.querySelector('button');
+    if (primero) primero.focus();
+  } else if (boton && panel.contains(document.activeElement)) {
+    boton.focus();
+  }
+}
+
 function toggleAccesibilidad() {
-  document.getElementById('panel-accesibilidad').classList.toggle('hidden');
+  var panel = document.getElementById('panel-accesibilidad');
+  if (!panel) return;
+  mostrarPanelAccesibilidad(panel.classList.contains('hidden'));
 }
 
 // Cerrar el panel si se hace clic fuera de él
 document.addEventListener('click', function (evento) {
   var contenedor = document.getElementById('accesibilidad');
-  var panel = document.getElementById('panel-accesibilidad');
   if (contenedor && !contenedor.contains(evento.target)) {
-    panel.classList.add('hidden');
+    mostrarPanelAccesibilidad(false);
+  }
+});
+
+// Cerrar el panel de accesibilidad con Escape
+document.addEventListener('keydown', function (evento) {
+  if (evento.key === 'Escape') {
+    mostrarPanelAccesibilidad(false);
   }
 });
 

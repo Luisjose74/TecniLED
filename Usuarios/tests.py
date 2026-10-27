@@ -706,8 +706,16 @@ class AccesibilidadPanelTests(TestCase):
         resp = self.client.get(reverse('usuarios_lista'))
         self.assertContains(resp, 'href="#contenido"')
         self.assertContains(resp, 'Saltar al contenido')
+        self.assertContains(resp, 'class="saltar-contenido"')
         self.assertContains(resp, 'id="contenido"')
         self.assertContains(resp, 'tabindex="-1"')
+
+    def test_panel_incluye_boton_de_accesibilidad(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'id="boton-accesibilidad"')
+        self.assertContains(resp, 'aria-controls="panel-accesibilidad"')
+        self.assertContains(resp, 'aria-expanded="false"')
+        self.assertContains(resp, 'js/main.js')
 
     def test_menu_marca_la_seccion_activa(self):
         import re
