@@ -699,3 +699,7 @@ class CreditosTests(TestCase):
         respuesta = self.client.get('/creditos/')
         self.assertContains(respuesta, 'Callum Hill')
         self.assertContains(respuesta, 'Alexandra Gorn')
+        
+    def test_footer_tiene_enlace_a_creditos(self):
+        respuesta = self.client.get('/')
+        self.assertContains(respuesta, 'href="/creditos/"')
