@@ -6,9 +6,11 @@
 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
 
     <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between items-center">
-      <form method="get" class="relative w-full sm:w-80">
+      <form method="get" role="search" class="relative w-full sm:w-80">
+        <label for="q" class="sr-only">Buscar usuarios por nombre, correo o cédula</label>
         <svg aria-hidden="true" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
         <input
+          id="q"
           type="text"
           name="q"
           value="{{ query }}"
@@ -25,32 +27,35 @@
       {% endif %}
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse min-w-[800px]">
+    <div tabindex="0" role="region" aria-label="Tabla de usuarios" class="overflow-x-auto">
+      <table class="w-full text-left border-collapse min-w-[720px]">
+        <caption class="sr-only">Usuarios registrados en TECNILED</caption>
         <thead>
           <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm border-b border-gray-100 dark:border-gray-700">
-            <th class="p-4 font-semibold">Nombre completo</th>
-            <th class="p-4 font-semibold">Correo</th>
-            <th class="p-4 font-semibold">Cédula</th>
-            <th class="p-4 font-semibold">Teléfono</th>
-            <th class="p-4 font-semibold">Rol</th>
-            <th class="p-4 font-semibold">Estado</th>
-            <th class="p-4 font-semibold text-right">Acciones</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold">Nombre completo</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold">Correo</th>
+            <th scope="col" class="hidden xl:table-cell px-3 py-4 xl:px-4 font-semibold">Cédula</th>
+            <th scope="col" class="hidden xl:table-cell px-3 py-4 xl:px-4 font-semibold">Teléfono</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold">Rol</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold">Estado</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold text-right">Acciones</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
           {% for u in usuarios %}
           <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-            <td class="p-4 font-medium text-gray-900 dark:text-white flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs shrink-0">
-                {{ u.first_name|default:u.email|first|upper }}
+            <td class="px-3 py-4 xl:px-4 font-medium text-gray-900 dark:text-white">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs shrink-0">
+                  {{ u.first_name|default:u.email|first|upper }}
+                </div>
+                {{ u.get_full_name|default:"Sin nombre" }}
               </div>
-              {{ u.get_full_name|default:"Sin nombre" }}
             </td>
-            <td class="p-4 text-gray-600 dark:text-gray-300">{{ u.email }}</td>
-            <td class="p-4 text-gray-600 dark:text-gray-400">{{ u.documento|default:"—" }}</td>
-            <td class="p-4 text-gray-600 dark:text-gray-400">{{ u.telefono|default:"—" }}</td>
-            <td class="p-4">
+            <td class="px-3 py-4 xl:px-4 text-gray-600 dark:text-gray-300 break-all">{{ u.email }}</td>
+            <td class="hidden xl:table-cell px-3 py-4 xl:px-4 text-gray-600 dark:text-gray-400">{{ u.documento|default:"—" }}</td>
+            <td class="hidden xl:table-cell px-3 py-4 xl:px-4 text-gray-600 dark:text-gray-400">{{ u.telefono|default:"—" }}</td>
+            <td class="px-3 py-4 xl:px-4">
               <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium w-fit
                 {% if u.rol == 'administrador' %}bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400
                 {% elif u.rol == 'control_inventario' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400
@@ -59,14 +64,14 @@
               </span>
             </td>
             <!-- G1-1174: estado de la cuenta visible en la lista -->
-            <td class="p-4">
+            <td class="px-3 py-4 xl:px-4">
               <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium w-fit
                 {% if u.estado_cuenta == 'activa' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400
                 {% else %}bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400{% endif %}">
                 {{ u.get_estado_cuenta_display }}
               </span>
             </td>
-            <td class="p-4 text-right space-x-1">
+            <td class="px-3 py-4 xl:px-4 text-right space-x-1">
               <!-- G1-118: ver detalle -->
               <a href="{% url 'usuario_detalle' u.id %}" title="Ver detalle" aria-label="Ver detalle" class="p-2 text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-500/10 rounded-lg transition-colors inline-block">
                 <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -88,15 +93,15 @@
     </div>
 
     {% if usuarios.has_other_pages %}
-    <div class="p-4 flex justify-center gap-2 border-t border-gray-100 dark:border-gray-700">
+    <nav aria-label="Paginación de usuarios" class="p-4 flex justify-center gap-2 border-t border-gray-100 dark:border-gray-700">
       {% if usuarios.has_previous %}
         <a href="?q={{ query }}&page={{ usuarios.previous_page_number }}" class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Anterior</a>
       {% endif %}
-      <span class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">Página {{ usuarios.number }} de {{ usuarios.paginator.num_pages }}</span>
+      <span aria-current="page" class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">Página {{ usuarios.number }} de {{ usuarios.paginator.num_pages }}</span>
       {% if usuarios.has_next %}
         <a href="?q={{ query }}&page={{ usuarios.next_page_number }}" class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Siguiente</a>
       {% endif %}
-    </div>
+    </nav>
     {% endif %}
 
 </div>

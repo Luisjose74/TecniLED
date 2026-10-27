@@ -1,0 +1,45 @@
+{% if user.is_authenticated %}
+<details class="relative">
+  <summary
+    aria-label="Notificaciones{% if notificaciones_sin_leer %}: {{ notificaciones_sin_leer }} sin leer{% endif %}"
+    title="Notificaciones"
+    class="list-none cursor-pointer [&::-webkit-details-marker]:hidden p-2 text-gray-500 hover:text-[#F2AE30] hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors relative flex items-center justify-center"
+  >
+    <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+    {% if notificaciones_sin_leer %}
+      <span class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+        {{ notificaciones_sin_leer }}
+      </span>
+    {% endif %}
+  </summary>
+
+  <div class="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-20 sm:top-auto mt-0 sm:mt-2 w-auto sm:w-80 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 z-50 overflow-hidden">
+    <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+      <p class="text-sm font-bold text-gray-900 dark:text-white">Notificaciones</p>
+      {% if notificaciones_sin_leer %}
+        <form method="post" action="{% url 'notificaciones_marcar_todas' %}">
+          {% csrf_token %}
+          <button type="submit" class="text-xs font-semibold text-gray-700 dark:text-[#F2AE30] hover:underline">
+            Marcar todas como leídas
+          </button>
+        </form>
+      {% endif %}
+    </div>
+
+    <div class="max-h-80 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
+      {% for n in ultimas_notificaciones %}
+        <a href="{% url 'notificaciones_lista' %}" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors {% if not n.leido %}bg-amber-50 dark:bg-amber-500/10{% endif %}">
+          <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">{{ n.get_tipo_display }} · {{ n.fecha_envio|date:"d/m/Y H:i" }}</p>
+          <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">{{ n.mensaje|truncatechars:120 }}</p>
+        </a>
+      {% empty %}
+        <p class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No tienes notificaciones.</p>
+      {% endfor %}
+    </div>
+
+    <a href="{% url 'notificaciones_lista' %}" class="block px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-[#F2AE30] hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors">
+      Ver todas las notificaciones
+    </a>
+  </div>
+</details>
+{% endif %}

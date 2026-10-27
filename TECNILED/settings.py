@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'ayuda',
     'compras',
     'reportes',
+    'notificaciones.apps.NotificacionesConfig',
 ]
 
 MIDDLEWARE = [
@@ -70,6 +71,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'notificaciones.context_processors.notificaciones',
             ],
         },
     },
@@ -137,6 +139,8 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+# G1-127: remitente de los correos del sistema
+DEFAULT_FROM_EMAIL = 'TECNILED <no-responder@tecniled.local>'
 
 
 AUTHENTICATION_BACKENDS = [
