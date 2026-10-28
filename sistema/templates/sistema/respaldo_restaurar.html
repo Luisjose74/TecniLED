@@ -30,10 +30,10 @@
             <form method="post" class="space-y-5">
                 {% csrf_token %}
                 <div>
-                    <label
+                    <label for="confirmacion"
                         class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Escribe
                         RESTAURAR para confirmar</label>
-                    <input required name="confirmacion" autocomplete="off"
+                    <input required id="confirmacion" name="confirmacion" autocomplete="off"
                         class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#F2AE30]"
                         placeholder="RESTAURAR">
                 </div>

@@ -1,11 +1,13 @@
+import re
 from datetime import timedelta
-from django.core.serializers import python
-from django.test import override_settings
-from django.utils import timezone
-from Usuarios.models import CodigoRecuperacion
-from django.test import TestCase
+from pathlib import Path
+
+from django.conf import settings
+from django.test import TestCase, override_settings
 from django.urls import reverse
-from Usuarios.models import Usuario
+from django.utils import timezone
+
+from Usuarios.models import CodigoRecuperacion, Usuario
 
 
 class RolesYPermisosTests(TestCase):
@@ -103,8 +105,9 @@ class CrearUsuarioInternoTests(TestCase):
     def datos_validos(self, **overrides):
         datos = {
             'first_name': 'Nueva', 'apellido': 'Cuenta', 'email': 'nueva@test.com',
-            'documento': '999', 'telefono': '3000000000',
+            'tipo_documento': 'CC', 'documento': '999', 'telefono': '3000000000',
             'rol': Usuario.Rol.CONTROL_INVENTARIO, 'contrasena': 'Segura123!',
+            'contrasena2': 'Segura123!',
         }
         datos.update(overrides)
         return datos
@@ -133,6 +136,51 @@ class CrearUsuarioInternoTests(TestCase):
         resp = self.client.post(reverse('crear_usuario'), self.datos_validos(rol='hacker'))
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(Usuario.objects.filter(email='nueva@test.com').exists())
+
+    def test_contrasena_sin_confirmacion_no_crea_cuenta(self):
+        datos = self.datos_validos()
+        datos.pop('contrasena2')
+        resp = self.client.post(reverse('crear_usuario'), datos)
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(Usuario.objects.filter(email='nueva@test.com').exists())
+
+    def test_contrasenas_distintas_no_crean_cuenta(self):
+        resp = self.client.post(
+            reverse('crear_usuario'),
+            self.datos_validos(contrasena2='OtraClave123!'),
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Las contraseñas no coinciden.')
+        self.assertFalse(Usuario.objects.filter(email='nueva@test.com').exists())
+
+    def test_contrasena_sin_numero_es_rechazada(self):
+        resp = self.client.post(
+            reverse('crear_usuario'),
+            self.datos_validos(contrasena='SinNumero!', contrasena2='SinNumero!'),
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'al menos un número')
+        self.assertFalse(Usuario.objects.filter(email='nueva@test.com').exists())
+
+    def test_guarda_tipo_de_documento(self):
+        resp = self.client.post(
+            reverse('crear_usuario'), self.datos_validos(tipo_documento='CE')
+        )
+        self.assertRedirects(resp, reverse('usuarios_lista'))
+        creado = Usuario.objects.get(email='nueva@test.com')
+        self.assertEqual(creado.tipo_documento, 'CE')
+
+    def test_formulario_muestra_requisitos_y_evita_autocompletado(self):
+        resp = self.client.get(reverse('crear_usuario'))
+        self.assertContains(resp, 'id="requisitos-contrasena"')
+        self.assertContains(resp, 'data-requisito="longitud"')
+        self.assertContains(resp, 'data-requisito="numero"')
+        self.assertContains(resp, 'autocomplete="new-password"')
+        self.assertContains(resp, 'autocomplete="email"')
+        self.assertContains(resp, 'autocomplete="tel"')
+        self.assertContains(resp, 'type="tel"')
+        self.assertContains(resp, 'for="id_tipo_documento"')
+        self.assertContains(resp, 'js/requisitos_contrasena.js')
 
     def test_requiere_permiso_gestionar_usuarios(self):
         cliente = Usuario.objects.create_user(
@@ -193,7 +241,8 @@ class EditarRolTests(TestCase):
         self.client.force_login(control)
         resp = self.client.get(reverse('usuarios_lista'))
         self.assertEqual(resp.status_code, 403)
-        
+
+
 class PlantillasBaseTests(TestCase):
     """G1-1190: las pantallas de administración usan admin_base.html."""
 
@@ -219,13 +268,13 @@ class PlantillasBaseTests(TestCase):
         resp = self.client.get(reverse('usuarios_lista'))
         # 2) El título y la miga deben decir "Gestión de usuarios" (con tilde)
         self.assertContains(resp, 'Gestión de usuarios')
-        
+
     def test_usuarios_crear_usa_admin_base(self):
         resp = self.client.get(reverse('crear_usuario'))
         self.assertTemplateUsed(resp, 'admin_base.html')
         self.assertTemplateNotUsed(resp, 'base.html')
         self.assertContains(resp, 'Nuevo usuario')
-                
+
     def test_usuarios_editar_rol_usa_admin_base(self):
         # Usuaria a la que el administrador le va a editar el rol
         giselle = Usuario.objects.create_user(
@@ -233,7 +282,7 @@ class PlantillasBaseTests(TestCase):
             password='Prueba123!', first_name='Giselle Vanessa', last_name='Velásquez Albarracín',
             rol=Usuario.Rol.CONTROL_INVENTARIO,
         )
-        
+
         # Abrir /usuarios/<id de Giselle>/editar-rol/
         resp = self.client.get(reverse('editar_rol', args=[giselle.pk]))
         # Debe usar la plantilla del panel y no la de la tienda
@@ -241,7 +290,7 @@ class PlantillasBaseTests(TestCase):
         self.assertTemplateNotUsed(resp, 'base.html')
         # La miga de pan debe decir "Editar usuario"
         self.assertContains(resp, 'Editar usuario')
-        
+
     def test_menu_lateral_enlaza_a_proveedores(self):
         # El enlace "Proveedores" del menú lateral debe llevar a /proveedores/
         resp = self.client.get(reverse('usuarios_lista'))
@@ -252,7 +301,7 @@ class PlantillasBaseTests(TestCase):
         resp = self.client.get(reverse('proveedores_lista'))
         self.assertEqual(resp.status_code, 200)
         self.assertTemplateUsed(resp, 'admin_base.html')
-                
+
     def test_menu_lateral_enlaza_a_respaldos(self):
         # Al administrador con permiso de respaldos le aparece "Copias de seguridad"
         from django.contrib.auth.models import Permission
@@ -260,8 +309,8 @@ class PlantillasBaseTests(TestCase):
         self.admin.user_permissions.add(permiso)
         resp = self.client.get(reverse('usuarios_lista'))
         self.assertContains(resp, 'href="' + reverse('respaldos_lista') + '"')
-        self.assertContains(resp, 'Copias de seguridad')   
-    
+        self.assertContains(resp, 'Copias de seguridad')
+
     def test_ruta_de_prueba_eliminada(self):
         # La página de prueba /productos/prueba/ ya no debe existir
         resp = self.client.get('/productos/prueba/')
@@ -273,8 +322,8 @@ class PlantillasBaseTests(TestCase):
         self.assertTemplateUsed(resp, 'base.html')
         self.assertTemplateUsed(resp, 'partials/header.html')
         self.assertTemplateUsed(resp, 'partials/footer.html')
-                
-        
+
+
 class BloqueoCuentaTests(TestCase):
     def setUp(self):
         self.usuario = Usuario.objects.create_user(
@@ -321,7 +370,8 @@ class BloqueoCuentaTests(TestCase):
         self.usuario.refresh_from_db()
         self.assertEqual(self.usuario.intentos_fallidos, 0)
         self.assertTrue(self.usuario.is_active)
-        
+
+
 # MD5 solo en pruebas: hace los tests mucho más rápidos. En producción se usa el hasher normal.
 @override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])
 class CodigoRecuperacionTests(TestCase):
@@ -379,6 +429,7 @@ class CodigoRecuperacionTests(TestCase):
         objeto, _ = CodigoRecuperacion.generar(self.usuario)
         self.assertEqual(CodigoRecuperacion.ultimo_vigente(self.usuario), objeto)
 
+
 class VerContrasenaTests(TestCase):
     """Botón del ojo para mostrar u ocultar la contraseña."""
 
@@ -397,6 +448,7 @@ class VerContrasenaTests(TestCase):
         resp = self.client.get(reverse('crear_usuario'))
         self.assertContains(resp, 'Mostrar contraseña')
         self.assertContains(resp, 'js/ver_contrasena.js')
+
 
 class UsuarioDetalleTests(TestCase):
     def setUp(self):
@@ -431,7 +483,8 @@ class UsuarioDetalleTests(TestCase):
     def test_sin_sesion_va_al_login(self):
         resp = self.client.get(reverse('usuario_detalle', args=[self.usuario.pk]))
         self.assertEqual(resp.status_code, 302)
-        
+
+
 class EditarUsuarioTests(TestCase):
     def setUp(self):
         self.admin = Usuario.objects.create_user(
@@ -527,7 +580,8 @@ class InactivarUsuarioTests(TestCase):
         self.client.force_login(self.admin)
         resp = self.client.get(self.url)
         self.assertEqual(resp.status_code, 405)
-        
+
+
 class MensajesTests(TestCase):
     def renderizar(self, nivel, texto):
         from django.contrib.messages.storage.base import Message
@@ -551,7 +605,8 @@ class MensajesTests(TestCase):
         html = self.renderizar(constants.SUCCESS, 'Guardado')
         self.assertIn('role="alert"', html)
         self.assertIn('aria-label="Cerrar mensaje"', html)
-        
+
+
 class ModalConfirmacionTests(TestCase):
     def setUp(self):
         self.admin = Usuario.objects.create_user(
@@ -570,8 +625,8 @@ class ModalConfirmacionTests(TestCase):
         self.assertContains(resp, 'data-confirmar=')
         self.assertContains(resp, 'js/confirmar.js')
         self.assertNotContains(resp, 'return confirm(')
-        
-        
+
+
 class TipoDeMensajeTests(TestCase):
     def test_recuperar_contrasena_muestra_aviso_informativo(self):
         from django.contrib.messages import get_messages
@@ -579,30 +634,23 @@ class TipoDeMensajeTests(TestCase):
         resp = self.client.post(reverse('recuperar_contrasena'), {'correo': 'nadie@test.com'})
         mensajes = list(get_messages(resp.wsgi_request))
         self.assertEqual(mensajes[0].level_tag, 'info')
-        
+
 
 class IconosConDescripcionTests(TestCase):
     """G1-1194: revisa todas las plantillas del proyecto."""
 
     def plantillas(self):
-        from pathlib import Path
-        from django.conf import settings
-
         carpeta = Path(settings.BASE_DIR)
         for archivo in carpeta.rglob('*.html'):
             if 'venv' not in archivo.parts:
                 yield archivo, archivo.read_text(encoding='utf-8')
 
     def test_todos_los_iconos_son_decorativos(self):
-        import re
-
         for archivo, texto in self.plantillas():
             for svg in re.findall(r'<svg\b[^>]*>', texto):
                 self.assertIn('aria-hidden="true"', svg, f'{archivo.name}: {svg[:60]}')
 
     def test_botones_solo_con_icono_tienen_descripcion(self):
-        import re
-
         patron = re.compile(r'<(a|button)\b([^>]*)>(.*?)</\1>', re.S)
         for archivo, texto in self.plantillas():
             for etiqueta in patron.finditer(texto):
@@ -616,16 +664,12 @@ class IconosConDescripcionTests(TestCase):
                     continue
                 self.assertIn('aria-label=', atributos, f'{archivo.name}: {atributos[:60]}')
                 self.assertIn('title=', atributos, f'{archivo.name}: {atributos[:60]}')
-                
-                
+
+
 class ContrasteTests(TestCase):
     """G1-1208: combinaciones de color que no cumplen el contraste mínimo (4.5:1)."""
 
     def test_no_hay_texto_blanco_sobre_amarillo_ni_sobre_rojo_500(self):
-        import re
-        from pathlib import Path
-        from django.conf import settings
-
         for archivo in Path(settings.BASE_DIR).rglob('*.html'):
             if 'venv' in archivo.parts:
                 continue
@@ -648,8 +692,8 @@ class IdiomaYZonaHorariaTests(TestCase):
 
     def test_zona_horaria_es_bogota(self):
         self.assertEqual(timezone.get_current_timezone_name(), 'America/Bogota')
-        
-        
+
+
 class MigasDePanTests(TestCase):
     """G1-1192: migas de pan con nivel intermedio y títulos claros."""
 
@@ -689,17 +733,151 @@ class MigasDePanTests(TestCase):
     def test_lista_no_tiene_miga_intermedia(self):
         resp = self.client.get(reverse('usuarios_lista'))
         self.assertTemplateNotUsed(resp, 'partials/miga.html')
-        
+
+
 class CreditosTests(TestCase):
+    """G1-1195: página de créditos de recursos externos.
+
+    OJO: esta clase está reconstruida. Si con `git show` recuperas la
+    original de la rama historia/G1-1195-creditos, reemplázala por esa.
+    """
+
     def test_pagina_creditos_carga(self):
         respuesta = self.client.get('/creditos/')
         self.assertEqual(respuesta.status_code, 200)
 
-    def test_creditos_muestra_autores_de_las_fotos(self):
-        respuesta = self.client.get('/creditos/')
-        self.assertContains(respuesta, 'Callum Hill')
-        self.assertContains(respuesta, 'Alexandra Gorn')
-        
-    def test_footer_tiene_enlace_a_creditos(self):
-        respuesta = self.client.get('/')
+    def test_pie_de_pagina_enlaza_a_creditos(self):
+        # G1-1226: la tienda muestra el enlace a Créditos en el pie de página
+        respuesta = self.client.get(reverse('inicio'))
         self.assertContains(respuesta, 'href="/creditos/"')
+
+
+class AccesibilidadPanelTests(TestCase):
+    """Accesibilidad del panel: teclado, lectores de pantalla y formularios."""
+
+    def setUp(self):
+        self.admin = Usuario.objects.create_user(
+            username='admin.panel@tecniled.com', email='admin.panel@tecniled.com',
+            password='Prueba123!', first_name='Admin', last_name='Panel',
+            rol=Usuario.Rol.ADMINISTRADOR,
+        )
+        self.client.force_login(self.admin)
+
+    def test_enlace_para_saltar_al_contenido(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'href="#contenido"')
+        self.assertContains(resp, 'Saltar al contenido')
+        self.assertContains(resp, 'class="saltar-contenido"')
+        self.assertContains(resp, 'id="contenido"')
+        self.assertContains(resp, 'tabindex="-1"')
+
+    def test_panel_incluye_boton_de_accesibilidad(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'id="boton-accesibilidad"')
+        self.assertContains(resp, 'aria-controls="panel-accesibilidad"')
+        self.assertContains(resp, 'aria-expanded="false"')
+        self.assertContains(resp, 'js/main.js')
+
+    def test_menu_marca_la_seccion_activa(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        html = resp.content.decode()
+        enlace = re.search(r'<a href="' + re.escape(reverse('usuarios_lista')) + r'"[^>]*>', html)
+        self.assertIsNotNone(enlace)
+        self.assertIn('aria-current="page"', enlace.group(0))
+
+    def test_menu_tiene_etiquetas_de_tierra(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'aria-label="Menú principal"')
+        self.assertContains(resp, 'aria-label="Secciones del panel"')
+
+    def test_botones_del_menu_informan_estado(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'id="sidebar-abrir"')
+        self.assertContains(resp, 'aria-controls="sidebar"')
+        self.assertContains(resp, 'aria-expanded="false"')
+        self.assertContains(resp, 'id="sidebar-overlay" aria-hidden="true"')
+
+    def test_buscador_tiene_etiqueta_asociada(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'role="search"')
+        self.assertContains(resp, '<label for="q"')
+        self.assertContains(resp, 'id="q"')
+
+    def test_tabla_usa_encabezados_de_columna(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'scope="col"', count=7)
+        # La tabla puede desplazarse en horizontal: debe poder enfocarse con Tab
+        self.assertContains(resp, 'tabindex="0" role="region" aria-label="Tabla de usuarios"')
+
+    def test_tabla_tiene_titulo_para_lectores(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, '<caption class="sr-only">Usuarios registrados en TECNILED</caption>')
+
+    def test_todas_las_tablas_del_panel_tienen_alcance_y_titulo(self):
+        paginas = [
+            'usuarios_lista', 'productos_lista', 'proveedores_lista',
+            'ordenes_lista', 'categorias_lista', 'entradas_lista',
+        ]
+        for nombre in paginas:
+            with self.subTest(pagina=nombre):
+                resp = self.client.get(reverse(nombre))
+                self.assertEqual(resp.status_code, 200)
+                html = resp.content.decode()
+                self.assertIn('<caption class="sr-only">', html)
+                self.assertNotRegex(html, r'<th class=')
+
+    def test_paginacion_es_navegacion_etiquetada(self):
+        for indice in range(12):
+            Usuario.objects.create(
+                username=f'extra{indice}@tecniled.com',
+                email=f'extra{indice}@tecniled.com',
+                rol=Usuario.Rol.CLIENTE,
+            )
+
+        resp = self.client.get(reverse('usuarios_lista'))
+        self.assertContains(resp, 'aria-label="Paginación de usuarios"')
+        self.assertContains(resp, '<span aria-current="page"')
+
+    def test_formularios_asocian_etiquetas_con_campos(self):
+        resp = self.client.get(reverse('crear_usuario'))
+        self.assertContains(resp, 'for="id_first_name"')
+        self.assertContains(resp, 'for="id_email"')
+        self.assertContains(resp, 'for="id_rol"')
+
+    def test_lineas_de_orden_tienen_nombres_accesibles(self):
+        resp = self.client.get(reverse('crear_orden'))
+        self.assertContains(resp, 'aria-label="Producto"')
+        self.assertContains(resp, 'aria-label="Cantidad"')
+        self.assertContains(resp, 'aria-label="Precio unitario"')
+
+
+class LoginLogoutTests(TestCase):
+    """El login no debe rellenarse ni desde el servidor ni desde la caché del navegador."""
+
+    def test_login_no_se_guarda_en_cache(self):
+        resp = self.client.get(reverse('login'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('no-store', resp['Cache-Control'])
+
+    def test_login_pide_no_autocompletar_y_etiqueta_las_credenciales(self):
+        resp = self.client.get(reverse('login'))
+        self.assertContains(resp, 'autocomplete="off"')
+        self.assertContains(resp, 'autocomplete="username"')
+        self.assertContains(resp, 'autocomplete="current-password"')
+
+    def test_login_limpia_las_credenciales_al_cargar(self):
+        resp = self.client.get(reverse('login'))
+        self.assertContains(resp, 'js/limpiar_login.js')
+
+    def test_logout_cierra_sesion_y_el_login_no_trae_credenciales(self):
+        usuario = Usuario.objects.create_user(
+            username='cierre@test.com', email='cierre@test.com', password='Prueba123!',
+        )
+        self.client.force_login(usuario)
+
+        resp = self.client.get(reverse('logout'))
+        self.assertRedirects(resp, reverse('login'))
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+        login = self.client.get(reverse('login'))
+        self.assertNotContains(login, 'cierre@test.com')

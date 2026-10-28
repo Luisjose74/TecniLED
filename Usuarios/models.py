@@ -25,9 +25,24 @@ class Usuario(AbstractUser):
         SUSPENDIDA = 'suspendida', 'Suspendida'
         BLOQUEADA = 'bloqueada', 'Bloqueada'
 
+    class TipoDocumento(models.TextChoices):
+        CC = 'CC', 'Cédula de Ciudadanía'
+        TI = 'TI', 'Tarjeta de Identidad'
+        CE = 'CE', 'Cédula de Extranjería'
+        PPT = 'PPT', 'Permiso por Protección Temporal'
+        PTP = 'PTP', 'Permiso Temporal de Permanencia'
+
     MAX_INTENTOS = 3  # G1-128
 
     email = models.EmailField('correo electrónico', unique=True)
+    tipo_documento = models.CharField(
+        'tipo de documento',
+        max_length=3,
+        choices=TipoDocumento.choices,
+        blank=True,
+        default='',
+        help_text='Tipo de documento de identidad (estándar Colombia).',
+    )
     documento = models.CharField(max_length=20, unique=True, null=True, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
     rol = models.CharField(max_length=20, choices=Rol.choices, default=Rol.CLIENTE)
@@ -63,15 +78,27 @@ class Usuario(AbstractUser):
         grupo, _ = Group.objects.get_or_create(name=self.get_rol_display())
         self.groups.add(grupo)
 
+    @property
+    def documento_completo(self):
+        """Documento con su tipo, listo para mostrar en listados y detalles."""
+        if not self.documento:
+            return '—'
+        return f'{self.tipo_documento} {self.documento}'.strip()
+
     def __str__(self):
         return self.email
 
 
 class CodigoRecuperacion(models.Model):
-    """Código temporal de un solo uso para recuperar la contraseña (G1-126)."""
+    """Código temporal de un solo uso para recuperar la contraseña (G1-126)
+    y para el doble factor de autenticación (G1-127)."""
 
     VIGENCIA_MINUTOS = 10
     MAX_INTENTOS = 5
+
+    class Proposito(models.TextChoices):
+        RECUPERACION = 'recuperacion', 'Recuperación de contraseña'
+        DOBLE_FACTOR = 'doble_factor', 'Doble factor de autenticación'
 
     usuario = models.ForeignKey(
         Usuario, on_delete=models.CASCADE, related_name='codigos_recuperacion'
@@ -81,6 +108,9 @@ class CodigoRecuperacion(models.Model):
     expira_en = models.DateTimeField()
     usado = models.BooleanField(default=False)
     intentos = models.PositiveSmallIntegerField(default=0)
+    proposito = models.CharField(
+        max_length=20, choices=Proposito.choices, default=Proposito.RECUPERACION
+    )  # G1-304
 
     class Meta:
         ordering = ['-creado_en']
@@ -89,23 +119,26 @@ class CodigoRecuperacion(models.Model):
         return f'Código de {self.usuario.email} ({self.creado_en:%Y-%m-%d %H:%M})'
 
     @classmethod
-    def generar(cls, usuario):
-        """Crea un código nuevo e invalida los anteriores.
+    def generar(cls, usuario, proposito=Proposito.RECUPERACION):
+        """Crea un código nuevo e invalida los anteriores del mismo propósito.
         Devuelve (objeto, codigo_en_claro). El código en claro solo existe aquí:
         hay que enviarlo por correo y no se vuelve a poder consultar."""
-        cls.objects.filter(usuario=usuario, usado=False).update(usado=True)
+        cls.objects.filter(usuario=usuario, usado=False, proposito=proposito).update(usado=True)
         codigo = f'{secrets.randbelow(10 ** 6):06d}'
         objeto = cls.objects.create(
             usuario=usuario,
+            proposito=proposito,
             codigo_hash=make_password(codigo),
             expira_en=timezone.now() + timedelta(minutes=cls.VIGENCIA_MINUTOS),
         )
         return objeto, codigo
 
     @classmethod
-    def ultimo_vigente(cls, usuario):
-        """Devuelve el código vigente del usuario, o None si no hay."""
-        codigo = cls.objects.filter(usuario=usuario, usado=False).first()
+    def ultimo_vigente(cls, usuario, proposito=Proposito.RECUPERACION):
+        """Devuelve el código vigente del usuario para ese propósito, o None si no hay."""
+        codigo = cls.objects.filter(
+            usuario=usuario, usado=False, proposito=proposito
+        ).first()
         return codigo if codigo and codigo.esta_vigente else None
 
     @property

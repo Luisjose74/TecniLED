@@ -25,16 +25,17 @@
     </button>
   </div>
 
-  <div class="overflow-x-auto">
+  <div tabindex="0" role="region" aria-label="Tabla de entradas de inventario" class="overflow-x-auto">
     <table class="w-full text-left border-collapse min-w-[700px]">
+        <caption class="sr-only">Entradas de inventario</caption>
       <thead>
         <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm border-b border-gray-100 dark:border-gray-700">
-          <th class="p-4 font-semibold">Fecha</th>
-          <th class="p-4 font-semibold">Producto</th>
-          <th class="p-4 font-semibold">Cantidad</th>
-          <th class="p-4 font-semibold">Stock resultante</th>
-          <th class="p-4 font-semibold">Registrado por</th>
-          <th class="p-4 font-semibold">Observación</th>
+          <th scope="col" class="p-4 font-semibold">Fecha</th>
+          <th scope="col" class="p-4 font-semibold">Producto</th>
+          <th scope="col" class="p-4 font-semibold">Cantidad</th>
+          <th scope="col" class="p-4 font-semibold">Stock resultante</th>
+          <th scope="col" class="p-4 font-semibold">Registrado por</th>
+          <th scope="col" class="p-4 font-semibold">Observación</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -62,11 +63,11 @@
   </div>
 
   {% if movimientos.has_other_pages %}
-  <div class="p-4 flex justify-center gap-2 border-t border-gray-100 dark:border-gray-700">
+  <div role="navigation" aria-label="Paginación de entradas de inventario" class="p-4 flex justify-center gap-2 border-t border-gray-100 dark:border-gray-700">
     {% if movimientos.has_previous %}
       <a href="?q={{ query|urlencode }}&page={{ movimientos.previous_page_number }}" class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Anterior</a>
     {% endif %}
-    <span class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">Página {{ movimientos.number }} de {{ movimientos.paginator.num_pages }}</span>
+    <span aria-current="page" class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">Página {{ movimientos.number }} de {{ movimientos.paginator.num_pages }}</span>
     {% if movimientos.has_next %}
       <a href="?q={{ query|urlencode }}&page={{ movimientos.next_page_number }}" class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Siguiente</a>
     {% endif %}
