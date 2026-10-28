@@ -36,7 +36,7 @@
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label
-                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Número
+                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2" for="id_numero_factura">Número
                     de orden/factura *</label>
                 {{ form.numero_factura }}
                 {% for error in form.numero_factura.errors %}<p
@@ -44,7 +44,7 @@
             </div>
             <div>
                 <label
-                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Fecha
+                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2" for="id_fecha">Fecha
                     *</label>
                 {{ form.fecha }}
                 {% for error in form.fecha.errors %}<p
@@ -54,7 +54,7 @@
 
         <div>
             <label
-                class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Proveedor
+                class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2" for="id_proveedor">Proveedor
                 *</label>
             {{ form.proveedor }}
             {% for error in form.proveedor.errors %}<p
@@ -65,10 +65,10 @@
                 aparecen proveedores activos.</p>
         </div>
 
-        <div>
-            <label
+        <div role="group" aria-labelledby="etiqueta-productos-orden">
+            <p id="etiqueta-productos-orden"
                 class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Productos
-                *</label>
+                *</p>
 
             {{ formset.management_form }}
 

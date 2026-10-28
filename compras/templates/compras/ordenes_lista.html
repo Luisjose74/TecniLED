@@ -30,17 +30,18 @@
         </a>
     </div>
 
-    <div class="overflow-x-auto">
+    <div tabindex="0" role="region" aria-label="Tabla de órdenes de compra" class="overflow-x-auto">
         <table class="w-full text-left border-collapse min-w-[700px]">
+        <caption class="sr-only">Órdenes de compra registradas</caption>
             <thead>
                 <tr
                     class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm border-b border-gray-100 dark:border-gray-700">
-                    <th class="p-4 font-semibold">N.º orden/factura</th>
-                    <th class="p-4 font-semibold">Fecha</th>
-                    <th class="p-4 font-semibold">Proveedor</th>
-                    <th class="p-4 font-semibold">Total</th>
-                    <th class="p-4 font-semibold">Estado</th>
-                    <th class="p-4 font-semibold text-right">Acciones</th>
+                    <th scope="col" class="p-4 font-semibold">N.º orden/factura</th>
+                    <th scope="col" class="p-4 font-semibold">Fecha</th>
+                    <th scope="col" class="p-4 font-semibold">Proveedor</th>
+                    <th scope="col" class="p-4 font-semibold">Total</th>
+                    <th scope="col" class="p-4 font-semibold">Estado</th>
+                    <th scope="col" class="p-4 font-semibold text-right">Acciones</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -100,7 +101,7 @@
     </div>
 
     {% if ordenes.has_other_pages %}
-    <div
+    <div role="navigation" aria-label="Paginación de órdenes de compra"
         class="p-4 flex justify-center gap-2 border-t border-gray-100 dark:border-gray-700">
         {% if ordenes.has_previous %}
         <a

@@ -23,9 +23,9 @@
     {% csrf_token %}
 
     <div>
-      <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Nombre de la empresa *</label>
+      <label for="id_nombre" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Nombre de la empresa *</label>
       {% if proveedor %}
-        <input type="text" value="{{ proveedor.nombre }}" disabled
+        <input type="text" id="id_nombre" value="{{ proveedor.nombre }}" disabled
           class="w-full bg-gray-100 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-500 dark:text-gray-400 cursor-not-allowed">
       {% else %}
         {{ form.nombre }}
@@ -35,9 +35,9 @@
 
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">NIT *</label>
+        <label for="id_nit" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">NIT *</label>
         {% if proveedor %}
-          <input type="text" value="{{ proveedor.nit }}" disabled
+          <input type="text" id="id_nit" value="{{ proveedor.nit }}" disabled
             class="w-full bg-gray-100 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-500 dark:text-gray-400 cursor-not-allowed">
         {% else %}
           {{ form.nit }}
@@ -48,27 +48,27 @@
 
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Teléfono</label>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2" for="id_telefono">Teléfono</label>
         {{ form.telefono }}
         {% for error in form.telefono.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
       </div>
       <div>
-        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Correo electrónico</label>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2" for="id_correo">Correo electrónico</label>
         {{ form.correo }}
         {% for error in form.correo.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
       </div>
     </div>
 
     <div>
-      <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Dirección</label>
+      <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2" for="id_direccion">Dirección</label>
       {{ form.direccion }}
       {% for error in form.direccion.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
     </div>
 
-    <div>
-      <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+    <div role="group" aria-labelledby="etiqueta-productos">
+      <p id="etiqueta-productos" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
         Productos que suministra (<span id="contador-productos">0</span>)
-      </label>
+      </p>
       <div class="max-h-48 overflow-y-auto bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-3 space-y-2">
         {% for checkbox in form.productos %}
         <label class="flex items-center gap-3 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
