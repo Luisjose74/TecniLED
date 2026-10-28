@@ -19,16 +19,16 @@
       </div>
       {% endif %}
 
-      <form method="post" class="space-y-5">
+      <form method="post" class="space-y-5" autocomplete="off">
         {% csrf_token %}
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Correo electrónico</label>
-          <input required type="email" name="correo" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#F2AE30]" placeholder="tu@correo.com">
+          <label for="login-correo" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Correo electrónico</label>
+          <input required type="email" name="correo" id="login-correo" autocomplete="username" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#F2AE30]" placeholder="tu@correo.com">
         </div>
         <div>
           <label for="login-contrasena" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Contraseña</label>
           <div class="relative">
-            <input required type="password" name="contrasena" id="login-contrasena" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl pl-4 pr-12 py-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#F2AE30]" placeholder="••••••••">
+            <input required type="password" name="contrasena" id="login-contrasena" autocomplete="current-password" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl pl-4 pr-12 py-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#F2AE30]" placeholder="••••••••">
             <button type="button" onclick="verContrasena('login-contrasena', this)"
                     class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-400 hover:text-[#F2AE30] transition-colors"
                     aria-label="Mostrar contraseña" title="Mostrar contraseña">
@@ -58,4 +58,5 @@
   </div>
 </div>
 <script src="{% static 'js/ver_contrasena.js' %}"></script>
+<script src="{% static 'js/limpiar_login.js' %}"></script>
 {% endblock %}

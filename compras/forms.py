@@ -76,6 +76,14 @@ class DetalleOrdenCompraForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for campo in self.fields.values():
             campo.widget.attrs['class'] = CLASE_INPUT
+        # Accesibilidad: cada línea de la orden se anuncia con su nombre
+        etiquetas = {
+            'producto': 'Producto',
+            'cantidad': 'Cantidad',
+            'precio_unitario': 'Precio unitario',
+        }
+        for nombre, etiqueta in etiquetas.items():
+            self.fields[nombre].widget.attrs['aria-label'] = etiqueta
         self.fields['producto'].queryset = Producto.objects.filter(activo=True)
         self.fields['producto'].empty_label = 'Selecciona un producto'
 

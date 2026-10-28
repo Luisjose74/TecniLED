@@ -14,7 +14,7 @@
 
     <div class="relative">
       <div class="mx-auto mb-5 w-16 h-16 rounded-2xl bg-white/90 flex items-center justify-center shadow-lg">
-        <svg class="w-8 h-8 text-[#F2AE30]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+        <svg aria-hidden="true" class="w-8 h-8 text-[#F2AE30]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
       </div>
       <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900">¿En qué te podemos ayudar?</h2>
       <p class="mt-3 text-gray-800/80 text-base md:text-lg">Encuentra respuestas rápidas o revisa la guía de cada módulo de TECNILED.</p>
@@ -23,7 +23,7 @@
       <form method="get" action="{% url 'ayuda' %}" role="search" class="mt-8 max-w-2xl mx-auto">
         <label for="buscar-ayuda" class="sr-only">Buscar en la ayuda</label>
         <div class="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-2xl p-2 shadow-2xl">
-          <svg class="w-5 h-5 ml-3 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <svg aria-hidden="true" class="w-5 h-5 ml-3 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <input type="search" id="buscar-ayuda" name="q" value="{{ busqueda }}" placeholder="Ej: contraseña, proveedor, respaldo..." class="flex-1 min-w-0 bg-transparent px-2 py-3 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none">
           <button type="submit" class="px-6 py-3 rounded-xl bg-gray-900 hover:bg-black text-white font-bold transition-colors">Buscar</button>
         </div>
@@ -61,7 +61,7 @@
     <div id="cat-{{ grupo.list.0.categoria }}" class="scroll-mt-24 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
         <span class="w-9 h-9 rounded-xl bg-[#F2AE30]/15 text-[#F2AE30] flex items-center justify-center" aria-hidden="true">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+          <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
         </span>
         <h4 class="flex-1 font-bold text-gray-900 dark:text-white">{{ grupo.grouper }}</h4>
         <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{{ grupo.list|length }}</span>
@@ -73,7 +73,7 @@
           <summary class="list-none flex items-center justify-between gap-4 cursor-pointer px-5 py-4 font-semibold text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
             <span>{{ p.pregunta }}</span>
             <span class="shrink-0 w-7 h-7 rounded-full border border-gray-200 dark:border-gray-600 flex items-center justify-center text-[#F2AE30] transition-transform duration-300 group-open:rotate-45" aria-hidden="true">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+              <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             </span>
           </summary>
           <div class="px-5 pb-5 pl-5 border-l-4 border-[#F2AE30] ml-5 mb-4 text-gray-600 dark:text-gray-300 leading-relaxed">{{ p.respuesta|linebreaksbr }}</div>
@@ -97,7 +97,7 @@
 
       <div class="group p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all">
         <div class="w-11 h-11 rounded-xl bg-sky-100 dark:bg-sky-500/15 text-sky-600 flex items-center justify-center mb-4" aria-hidden="true">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
         <h4 class="font-bold text-gray-900 dark:text-white">Usuarios</h4>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Crea cuentas internas, asigna un rol (Administrador, Control de inventario o Cliente) y cámbialo cuando sea necesario.</p>
@@ -105,7 +105,7 @@
 
       <div class="group p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all">
         <div class="w-11 h-11 rounded-xl bg-amber-100 dark:bg-amber-500/15 text-amber-600 flex items-center justify-center mb-4" aria-hidden="true">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+          <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
         </div>
         <h4 class="font-bold text-gray-900 dark:text-white">Productos</h4>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Registra productos con su precio, stock e imagen, y marca los destacados que aparecen en la tienda.</p>
@@ -113,7 +113,7 @@
 
       <div class="group p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all">
         <div class="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 flex items-center justify-center mb-4" aria-hidden="true">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+          <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
         </div>
         <h4 class="font-bold text-gray-900 dark:text-white">Proveedores</h4>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Registra, edita, inactiva o reactiva proveedores y asígnales los productos que suministran.</p>
@@ -121,7 +121,7 @@
 
       <div class="group p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all">
         <div class="w-11 h-11 rounded-xl bg-violet-100 dark:bg-violet-500/15 text-violet-600 flex items-center justify-center mb-4" aria-hidden="true">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+          <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
         </div>
         <h4 class="font-bold text-gray-900 dark:text-white">Copias de seguridad</h4>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Genera una copia de la base de datos, descárgala o restáurala si se pierde información.</p>
@@ -133,14 +133,14 @@
   <!-- ===== 5. MANUAL DE USUARIO ===== -->
   <section class="flex flex-col md:flex-row items-center gap-6 p-6 md:p-8 rounded-3xl bg-gray-900 dark:bg-gray-800 text-white shadow-xl">
     <div class="w-16 h-16 shrink-0 rounded-2xl bg-[#F2AE30] text-gray-900 flex items-center justify-center" aria-hidden="true">
-      <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+      <svg aria-hidden="true" class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
     </div>
     <div class="flex-1 text-center md:text-left">
       <h3 class="text-xl font-bold">¿Necesitas la guía completa?</h3>
       <p class="mt-1 text-gray-300 text-sm">Descarga el manual de usuario con el paso a paso de todos los módulos.</p>
     </div>
     <a href="{% static 'docs/manual_usuario.pdf' %}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#F2AE30] hover:bg-[#d99b28] text-gray-900 font-bold transition-colors">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+      <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
       Manual de usuario (PDF)
     </a>
   </section>

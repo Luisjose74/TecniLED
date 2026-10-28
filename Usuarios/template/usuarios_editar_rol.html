@@ -20,40 +20,46 @@
       </a>
     </div>
 
-    <form method="post" class="space-y-4">
+    <form method="post" class="space-y-4" autocomplete="off">
       {% csrf_token %}
 
       <div class="border border-gray-100 dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-900/40 space-y-3">
         <p class="text-xs font-bold text-gray-700 dark:text-gray-300">Datos de la cuenta</p>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Nombre</label>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1" for="id_first_name">Nombre</label>
             {{ form.first_name }}
             {% for error in form.first_name.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Apellido</label>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1" for="id_last_name">Apellido</label>
             {{ form.last_name }}
             {% for error in form.last_name.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
           </div>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Correo electrónico</label>
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1" for="id_email">Correo electrónico</label>
           {{ form.email }}
           <p class="text-xs text-gray-400 mt-1">El correo no se puede modificar.</p>
           {% for error in form.email.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Cédula</label>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1" for="id_tipo_documento">Tipo de documento</label>
+            {{ form.tipo_documento }}
+            <p id="id_tipo_documento_helptext" class="text-xs text-gray-400 mt-1">{{ form.tipo_documento.help_text }}</p>
+            {% for error in form.tipo_documento.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1" for="id_documento">Número de documento</label>
             {{ form.documento }}
             {% for error in form.documento.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Teléfono</label>
-            {{ form.telefono }}
-            {% for error in form.telefono.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
-          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1" for="id_telefono">Teléfono</label>
+          {{ form.telefono }}
+          {% for error in form.telefono.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
         </div>
       </div>
 
@@ -62,13 +68,13 @@
           <svg aria-hidden="true" class="w-3.5 h-3.5 text-[#F2AE30]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
           Rol y permisos
         </p>
-        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Rol *</label>
+        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1" for="id_rol">Rol *</label>
         {{ form.rol }}
         {% for error in form.rol.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
       </div>
 
       <div>
-        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Estado de la cuenta</label>
+        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1" for="id_estado_cuenta">Estado de la cuenta</label>
         {{ form.estado_cuenta }}
         {% for error in form.estado_cuenta.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
       </div>

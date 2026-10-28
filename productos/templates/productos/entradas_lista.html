@@ -8,7 +8,7 @@
   <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between items-center">
     <form method="get" class="flex w-full sm:w-auto gap-4">
       <div class="relative flex-1 sm:w-64">
-        <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+        <svg aria-hidden="true" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
         <input
           type="text"
           name="q"
@@ -20,21 +20,22 @@
     </form>
 
     <button type="button" id="btn-nueva-entrada" class="w-full sm:w-auto px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-sky-500/20">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
       Registrar Entrada
     </button>
   </div>
 
-  <div class="overflow-x-auto">
+  <div tabindex="0" role="region" aria-label="Tabla de entradas de inventario" class="overflow-x-auto">
     <table class="w-full text-left border-collapse min-w-[700px]">
+        <caption class="sr-only">Entradas de inventario</caption>
       <thead>
         <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm border-b border-gray-100 dark:border-gray-700">
-          <th class="p-4 font-semibold">Fecha</th>
-          <th class="p-4 font-semibold">Producto</th>
-          <th class="p-4 font-semibold">Cantidad</th>
-          <th class="p-4 font-semibold">Stock resultante</th>
-          <th class="p-4 font-semibold">Registrado por</th>
-          <th class="p-4 font-semibold">Observación</th>
+          <th scope="col" class="p-4 font-semibold">Fecha</th>
+          <th scope="col" class="p-4 font-semibold">Producto</th>
+          <th scope="col" class="p-4 font-semibold">Cantidad</th>
+          <th scope="col" class="p-4 font-semibold">Stock resultante</th>
+          <th scope="col" class="p-4 font-semibold">Registrado por</th>
+          <th scope="col" class="p-4 font-semibold">Observación</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -62,11 +63,11 @@
   </div>
 
   {% if movimientos.has_other_pages %}
-  <div class="p-4 flex justify-center gap-2 border-t border-gray-100 dark:border-gray-700">
+  <div role="navigation" aria-label="Paginación de entradas de inventario" class="p-4 flex justify-center gap-2 border-t border-gray-100 dark:border-gray-700">
     {% if movimientos.has_previous %}
       <a href="?q={{ query|urlencode }}&page={{ movimientos.previous_page_number }}" class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Anterior</a>
     {% endif %}
-    <span class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">Página {{ movimientos.number }} de {{ movimientos.paginator.num_pages }}</span>
+    <span aria-current="page" class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">Página {{ movimientos.number }} de {{ movimientos.paginator.num_pages }}</span>
     {% if movimientos.has_next %}
       <a href="?q={{ query|urlencode }}&page={{ movimientos.next_page_number }}" class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Siguiente</a>
     {% endif %}
