@@ -290,3 +290,8 @@ def verificar_codigo(request):
         form = VerificarCodigoForm()
 
     return render(request, 'verificar_codigo.html', {'form': form, 'error': error})
+
+
+def creditos(request):
+    # Página pública con los créditos de imágenes, iconos y librerías externas
+    return render(request, 'creditos.html')
