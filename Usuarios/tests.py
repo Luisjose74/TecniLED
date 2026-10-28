@@ -1,8 +1,10 @@
+import re
 from datetime import timedelta
 from django.core.serializers import python
 from django.test import override_settings
 from django.utils import timezone
-from Usuarios.models import CodigoRecuperacion
+from Usuarios.models import CodigoRecuperacion, CodigoDobleFactor
+from django.core import mail
 from django.test import TestCase
 from django.urls import reverse
 from Usuarios.models import Usuario
@@ -689,3 +691,109 @@ class MigasDePanTests(TestCase):
     def test_lista_no_tiene_miga_intermedia(self):
         resp = self.client.get(reverse('usuarios_lista'))
         self.assertTemplateNotUsed(resp, 'partials/miga.html')
+
+
+class DobleFactorTests(TestCase):
+    def setUp(self):
+        self.usuario = Usuario.objects.create_user(
+            username='df@test.com', email='df@test.com',
+            password='Prueba123!', rol=Usuario.Rol.CLIENTE,
+        )
+
+    def login(self, correo='df@test.com', contrasena='Prueba123!'):
+        return self.client.post(reverse('login'), {'correo': correo, 'contrasena': contrasena})
+
+    def codigo_del_correo(self):
+        cuerpo = mail.outbox[-1].body
+        return re.search(r'acceso es: (\d{6})', cuerpo).group(1)
+
+    def test_sin_doble_factor_el_login_entra_directo(self):
+        respuesta = self.login()
+        self.assertRedirects(respuesta, reverse('inicio'))
+        self.assertIn('_auth_user_id', self.client.session)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_con_doble_factor_no_inicia_sesion_y_envia_codigo(self):
+        self.usuario.doble_factor_activo = True
+        self.usuario.save()
+        respuesta = self.login()
+        self.assertRedirects(respuesta, reverse('verificar_doble_factor'))
+        self.assertNotIn('_auth_user_id', self.client.session)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['df@test.com'])
+        self.codigo_del_correo()
+
+    def test_codigo_correcto_completa_el_acceso(self):
+        self.usuario.doble_factor_activo = True
+        self.usuario.save()
+        self.login()
+        codigo = self.codigo_del_correo()
+        respuesta = self.client.post(reverse('verificar_doble_factor'), {'codigo': codigo})
+        self.assertRedirects(respuesta, reverse('inicio'))
+        self.assertIn('_auth_user_id', self.client.session)
+        self.assertNotIn('doble_factor_usuario_id', self.client.session)
+
+    def test_codigo_incorrecto_no_da_acceso_y_cuenta_el_intento(self):
+        self.usuario.doble_factor_activo = True
+        self.usuario.save()
+        self.login()
+        codigo = self.codigo_del_correo()
+        incorrecto = '000000' if codigo != '000000' else '111111'
+        respuesta = self.client.post(reverse('verificar_doble_factor'), {'codigo': incorrecto})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertNotIn('_auth_user_id', self.client.session)
+        self.assertEqual(CodigoDobleFactor.objects.get().intentos, 1)
+
+    def test_codigo_vencido_no_da_acceso(self):
+        self.usuario.doble_factor_activo = True
+        self.usuario.save()
+        self.login()
+        codigo = self.codigo_del_correo()
+        objeto = CodigoDobleFactor.objects.get()
+        objeto.expira_en = timezone.now() - timedelta(minutes=1)
+        objeto.save()
+        self.client.post(reverse('verificar_doble_factor'), {'codigo': codigo})
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_reenviar_invalida_el_codigo_anterior(self):
+        self.usuario.doble_factor_activo = True
+        self.usuario.save()
+        self.login()
+        primero = self.codigo_del_correo()
+        self.client.post(reverse('reenviar_doble_factor'))
+        self.assertEqual(len(mail.outbox), 2)
+        segundo = self.codigo_del_correo()
+        self.client.post(reverse('verificar_doble_factor'), {'codigo': primero})
+        if primero != segundo:
+            self.assertNotIn('_auth_user_id', self.client.session)
+        self.client.post(reverse('verificar_doble_factor'), {'codigo': segundo})
+        self.assertIn('_auth_user_id', self.client.session)
+
+    def test_verificar_sin_login_previo_redirige_al_login(self):
+        respuesta = self.client.get(reverse('verificar_doble_factor'))
+        self.assertRedirects(respuesta, reverse('login'))
+
+    def test_pantalla_de_seguridad_requiere_sesion(self):
+        respuesta = self.client.get(reverse('seguridad_cuenta'))
+        self.assertEqual(respuesta.status_code, 302)
+
+    def test_usuario_puede_activar_y_desactivar_el_doble_factor(self):
+        self.client.force_login(self.usuario)
+        self.client.post(reverse('seguridad_cuenta'), {'accion': 'activar'})
+        self.usuario.refresh_from_db()
+        self.assertTrue(self.usuario.doble_factor_activo)
+        self.client.post(reverse('seguridad_cuenta'), {'accion': 'desactivar'})
+        self.usuario.refresh_from_db()
+        self.assertFalse(self.usuario.doble_factor_activo)
+
+    def test_cada_rol_puede_activar_el_doble_factor(self):
+        for rol in (Usuario.Rol.ADMINISTRADOR, Usuario.Rol.CONTROL_INVENTARIO, Usuario.Rol.CLIENTE):
+            otro = Usuario.objects.create_user(
+                username=f'{rol}@test.com', email=f'{rol}@test.com',
+                password='Prueba123!', rol=rol,
+            )
+            self.client.force_login(otro)
+            self.client.post(reverse('seguridad_cuenta'), {'accion': 'activar'})
+            otro.refresh_from_db()
+            self.assertTrue(otro.doble_factor_activo)
+            self.client.logout()
