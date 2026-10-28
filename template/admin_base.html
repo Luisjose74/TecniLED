@@ -25,6 +25,8 @@
   <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261026">
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
+{# Accesibilidad: permite saltar el menú con el teclado #}
+<a href="#contenido" class="saltar-contenido">Saltar al contenido</a>
 {% with nombre=request.resolver_match.url_name %}
 <div class="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
 
@@ -32,7 +34,7 @@
   <div id="sidebar-overlay" aria-hidden="true" class="hidden fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"></div>
 
   <!-- SIDEBAR -->
-  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 shadow-xl lg:shadow-none lg:static lg:flex transform transition-transform duration-300 -translate-x-full lg:translate-x-0 flex flex-col">
+  <aside id="sidebar" aria-label="Menú principal" class="fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 shadow-xl lg:shadow-none lg:static lg:flex transform transition-transform duration-300 -translate-x-full lg:translate-x-0 flex flex-col">
     <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between shrink-0">
       <a href="{% url 'inicio' %}" class="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
         <svg aria-hidden="true" class="w-7 h-7 text-[#F2AE30]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -43,7 +45,7 @@
       </button>
     </div>
 
-    <nav class="flex-1 min-h-0 overflow-y-auto p-4 space-y-1">
+    <nav aria-label="Secciones del panel" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-1">
       {# Inicio: aún no existe, apunta al inicio #}
       <a href="{% url 'inicio' %}" {% if nombre == 'inicio' %}aria-current="page"{% endif %} class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50">
         <svg aria-hidden="true" class="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
