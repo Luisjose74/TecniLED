@@ -35,6 +35,7 @@ class Usuario(AbstractUser):
         max_length=12, choices=EstadoCuenta.choices, default=EstadoCuenta.ACTIVA
     )
     intentos_fallidos = models.PositiveSmallIntegerField(default=0)  # G1-128
+    doble_factor_activo = models.BooleanField(default=False)  # G1-127
 
     class Meta(AbstractUser.Meta):
         permissions = [
@@ -105,6 +106,68 @@ class CodigoRecuperacion(models.Model):
     @classmethod
     def ultimo_vigente(cls, usuario):
         """Devuelve el código vigente del usuario, o None si no hay."""
+        codigo = cls.objects.filter(usuario=usuario, usado=False).first()
+        return codigo if codigo and codigo.esta_vigente else None
+
+    @property
+    def esta_vigente(self):
+        return (
+            not self.usado
+            and self.intentos < self.MAX_INTENTOS
+            and timezone.now() < self.expira_en
+        )
+
+    def validar(self, codigo):
+        """True si el código es correcto y sigue vigente. Si falla, cuenta el intento."""
+        if not self.esta_vigente:
+            return False
+        if check_password(codigo, self.codigo_hash):
+            return True
+        self.intentos += 1
+        self.save(update_fields=['intentos'])
+        return False
+
+    def marcar_usado(self):
+        self.usado = True
+        self.save(update_fields=['usado'])
+
+
+class CodigoDobleFactor(models.Model):
+    """Código temporal de un solo uso para el segundo factor al iniciar sesión (G1-127)."""
+
+    VIGENCIA_MINUTOS = 10
+    MAX_INTENTOS = 5
+
+    usuario = models.ForeignKey(
+        Usuario, on_delete=models.CASCADE, related_name='codigos_doble_factor'
+    )
+    codigo_hash = models.CharField(max_length=128)  # el código nunca se guarda en claro
+    creado_en = models.DateTimeField(auto_now_add=True)
+    expira_en = models.DateTimeField()
+    usado = models.BooleanField(default=False)
+    intentos = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['-creado_en']
+
+    def __str__(self):
+        return f'Código de acceso de {self.usuario.email} ({self.creado_en:%Y-%m-%d %H:%M})'
+
+    @classmethod
+    def generar(cls, usuario):
+        """Crea un código nuevo e invalida los anteriores.
+        Devuelve (objeto, codigo_en_claro)."""
+        cls.objects.filter(usuario=usuario, usado=False).update(usado=True)
+        codigo = f'{secrets.randbelow(10 ** 6):06d}'
+        objeto = cls.objects.create(
+            usuario=usuario,
+            codigo_hash=make_password(codigo),
+            expira_en=timezone.now() + timedelta(minutes=cls.VIGENCIA_MINUTOS),
+        )
+        return objeto, codigo
+
+    @classmethod
+    def ultimo_vigente(cls, usuario):
         codigo = cls.objects.filter(usuario=usuario, usado=False).first()
         return codigo if codigo and codigo.esta_vigente else None
 
