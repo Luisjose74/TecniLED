@@ -27,10 +27,16 @@ urlpatterns = [
     path('sistema/', RedirectView.as_view(pattern_name='respaldos_lista', permanent=False)),
     path('sistema/', include('sistema.urls')),
     path('ayuda/', include('ayuda.urls')),
+    path('notificaciones/', include('notificaciones.urls')),
     path('', include('Usuarios.urls')),
     path('', include('productos.urls')),
     path('', include('compras.urls')),   
 ]
+
+
+# G1-203: cuando una vista lanza PermissionDenied se registra la notificación
+# y se muestra la página 403 existente.
+handler403 = 'notificaciones.views.error_403'
 
 
 if settings.DEBUG:
