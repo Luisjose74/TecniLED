@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'sistema',
     'ayuda',
     'compras',
+    'reportes',
 ]
 
 MIDDLEWARE = [
@@ -136,6 +137,8 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+# G1-127: remitente de los correos del sistema
+DEFAULT_FROM_EMAIL = 'TECNILED <no-responder@tecniled.local>'
 
 
 AUTHENTICATION_BACKENDS = [
