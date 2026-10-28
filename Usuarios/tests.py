@@ -103,8 +103,9 @@ class CrearUsuarioInternoTests(TestCase):
     def datos_validos(self, **overrides):
         datos = {
             'first_name': 'Nueva', 'apellido': 'Cuenta', 'email': 'nueva@test.com',
-            'documento': '999', 'telefono': '3000000000',
+            'tipo_documento': 'CC', 'documento': '999', 'telefono': '3000000000',
             'rol': Usuario.Rol.CONTROL_INVENTARIO, 'contrasena': 'Segura123!',
+            'contrasena2': 'Segura123!',
         }
         datos.update(overrides)
         return datos
@@ -133,6 +134,51 @@ class CrearUsuarioInternoTests(TestCase):
         resp = self.client.post(reverse('crear_usuario'), self.datos_validos(rol='hacker'))
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(Usuario.objects.filter(email='nueva@test.com').exists())
+
+    def test_contrasena_sin_confirmacion_no_crea_cuenta(self):
+        datos = self.datos_validos()
+        datos.pop('contrasena2')
+        resp = self.client.post(reverse('crear_usuario'), datos)
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(Usuario.objects.filter(email='nueva@test.com').exists())
+
+    def test_contrasenas_distintas_no_crean_cuenta(self):
+        resp = self.client.post(
+            reverse('crear_usuario'),
+            self.datos_validos(contrasena2='OtraClave123!'),
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Las contraseñas no coinciden.')
+        self.assertFalse(Usuario.objects.filter(email='nueva@test.com').exists())
+
+    def test_contrasena_sin_numero_es_rechazada(self):
+        resp = self.client.post(
+            reverse('crear_usuario'),
+            self.datos_validos(contrasena='SinNumero!', contrasena2='SinNumero!'),
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'al menos un número')
+        self.assertFalse(Usuario.objects.filter(email='nueva@test.com').exists())
+
+    def test_guarda_tipo_de_documento(self):
+        resp = self.client.post(
+            reverse('crear_usuario'), self.datos_validos(tipo_documento='CE')
+        )
+        self.assertRedirects(resp, reverse('usuarios_lista'))
+        creado = Usuario.objects.get(email='nueva@test.com')
+        self.assertEqual(creado.tipo_documento, 'CE')
+
+    def test_formulario_muestra_requisitos_y_evita_autocompletado(self):
+        resp = self.client.get(reverse('crear_usuario'))
+        self.assertContains(resp, 'id="requisitos-contrasena"')
+        self.assertContains(resp, 'data-requisito="longitud"')
+        self.assertContains(resp, 'data-requisito="numero"')
+        self.assertContains(resp, 'autocomplete="new-password"')
+        self.assertContains(resp, 'autocomplete="email"')
+        self.assertContains(resp, 'autocomplete="tel"')
+        self.assertContains(resp, 'type="tel"')
+        self.assertContains(resp, 'for="id_tipo_documento"')
+        self.assertContains(resp, 'js/requisitos_contrasena.js')
 
     def test_requiere_permiso_gestionar_usuarios(self):
         cliente = Usuario.objects.create_user(
@@ -790,3 +836,35 @@ class AccesibilidadPanelTests(TestCase):
         self.assertContains(resp, 'aria-label="Producto"')
         self.assertContains(resp, 'aria-label="Cantidad"')
         self.assertContains(resp, 'aria-label="Precio unitario"')
+
+
+class LoginLogoutTests(TestCase):
+    """El login no debe rellenarse ni desde el servidor ni desde la caché del navegador."""
+
+    def test_login_no_se_guarda_en_cache(self):
+        resp = self.client.get(reverse('login'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('no-store', resp['Cache-Control'])
+
+    def test_login_pide_no_autocompletar_y_etiqueta_las_credenciales(self):
+        resp = self.client.get(reverse('login'))
+        self.assertContains(resp, 'autocomplete="off"')
+        self.assertContains(resp, 'autocomplete="username"')
+        self.assertContains(resp, 'autocomplete="current-password"')
+
+    def test_login_limpia_las_credenciales_al_cargar(self):
+        resp = self.client.get(reverse('login'))
+        self.assertContains(resp, 'js/limpiar_login.js')
+
+    def test_logout_cierra_sesion_y_el_login_no_trae_credenciales(self):
+        usuario = Usuario.objects.create_user(
+            username='cierre@test.com', email='cierre@test.com', password='Prueba123!',
+        )
+        self.client.force_login(usuario)
+
+        resp = self.client.get(reverse('logout'))
+        self.assertRedirects(resp, reverse('login'))
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+        login = self.client.get(reverse('login'))
+        self.assertNotContains(login, 'cierre@test.com')

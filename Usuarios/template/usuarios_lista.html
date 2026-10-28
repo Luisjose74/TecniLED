@@ -31,13 +31,13 @@
       <table class="w-full text-left border-collapse min-w-[720px]">
         <thead>
           <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm border-b border-gray-100 dark:border-gray-700">
-            <th class="px-3 py-4 xl:px-4 font-semibold">Nombre completo</th>
-            <th class="px-3 py-4 xl:px-4 font-semibold">Correo</th>
-            <th class="hidden xl:table-cell px-3 py-4 xl:px-4 font-semibold">Cédula</th>
-            <th class="hidden xl:table-cell px-3 py-4 xl:px-4 font-semibold">Teléfono</th>
-            <th class="px-3 py-4 xl:px-4 font-semibold">Rol</th>
-            <th class="px-3 py-4 xl:px-4 font-semibold">Estado</th>
-            <th class="px-3 py-4 xl:px-4 font-semibold text-right">Acciones</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold">Nombre completo</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold">Correo</th>
+            <th scope="col" class="hidden xl:table-cell px-3 py-4 xl:px-4 font-semibold">Documento</th>
+            <th scope="col" class="hidden xl:table-cell px-3 py-4 xl:px-4 font-semibold">Teléfono</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold">Rol</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold">Estado</th>
+            <th scope="col" class="px-3 py-4 xl:px-4 font-semibold text-right">Acciones</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -52,7 +52,7 @@
               </div>
             </td>
             <td class="px-3 py-4 xl:px-4 text-gray-600 dark:text-gray-300 break-all">{{ u.email }}</td>
-            <td class="hidden xl:table-cell px-3 py-4 xl:px-4 text-gray-600 dark:text-gray-400">{{ u.documento|default:"—" }}</td>
+            <td class="hidden xl:table-cell px-3 py-4 xl:px-4 text-gray-600 dark:text-gray-400">{{ u.documento_completo }}</td>
             <td class="hidden xl:table-cell px-3 py-4 xl:px-4 text-gray-600 dark:text-gray-400">{{ u.telefono|default:"—" }}</td>
             <td class="px-3 py-4 xl:px-4">
               <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium w-fit

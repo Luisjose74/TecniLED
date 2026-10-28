@@ -72,12 +72,21 @@ def login_view(request):
                     error = "Tu cuenta fue bloqueada por 3 intentos fallidos. Contacta al administrador."
                 usuario.save()
 
-    return render(request, 'login.html', {'error': error})
+    respuesta = render(request, 'login.html', {'error': error})
+    # La plantilla nunca recibe el correo ni la contraseña: aquí no hay datos
+    # que precargar. Estos encabezados evitan que el navegador muestre una
+    # copia en caché del formulario con valores viejos (atrás/adelante o bfcache).
+    respuesta['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    respuesta['Pragma'] = 'no-cache'
+    respuesta['Expires'] = '0'
+    return respuesta
 
 
 def logout_view(request):
     logout(request)
-    return redirect('login')
+    respuesta = redirect('login')
+    respuesta['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return respuesta
 
 
 @login_required
