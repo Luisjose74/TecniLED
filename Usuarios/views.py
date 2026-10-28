@@ -1,7 +1,7 @@
 from django.views.decorators.http import require_POST
 from django.conf import settings
 from django.core.mail import send_mail
-from .models import CodigoRecuperacion
+from .models import CodigoRecuperacion, CodigoDobleFactor
 from .forms import SolicitarRecuperacionForm
 
 from django.contrib import messages
@@ -47,6 +47,11 @@ def login_view(request):
             error = "Tu cuenta está suspendida. Contacta al administrador."
         else:
             user = authenticate(request, username=correo, password=contrasena)
+            if user is not None and user.doble_factor_activo:
+                # G1-127: la contraseña es correcta, pero falta el segundo factor
+                _enviar_codigo_doble_factor(user)
+                request.session['doble_factor_usuario_id'] = user.pk
+                return redirect('verificar_doble_factor')
             if user is not None:
                 # Login correcto: se reinicia el contador de intentos
                 if user.intentos_fallidos:
@@ -69,6 +74,74 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+
+def _enviar_codigo_doble_factor(usuario):
+    _, codigo = CodigoDobleFactor.generar(usuario)
+    send_mail(
+        subject='Código de acceso - TECNILED',
+        message=(
+            f'Hola {usuario.first_name or usuario.email},\n\n'
+            f'Tu código de acceso es: {codigo}\n'
+            f'Es válido por {CodigoDobleFactor.VIGENCIA_MINUTOS} minutos y solo se puede usar una vez.\n\n'
+            'Si no intentaste iniciar sesión, cambia tu contraseña.'
+        ),
+        from_email=None,
+        recipient_list=[usuario.email],
+    )
+
+
+def verificar_doble_factor(request):
+    if request.user.is_authenticated:
+        return redirect('inicio')
+
+    usuario_id = request.session.get('doble_factor_usuario_id')
+    usuario = Usuario.objects.filter(
+        pk=usuario_id, estado_cuenta=Usuario.EstadoCuenta.ACTIVA
+    ).first() if usuario_id else None
+    if usuario is None:
+        request.session.pop('doble_factor_usuario_id', None)
+        return redirect('login')
+
+    error = None
+    if request.method == 'POST':
+        codigo = (request.POST.get('codigo') or '').strip()
+        objeto = CodigoDobleFactor.ultimo_vigente(usuario)
+        if objeto and len(codigo) == 6 and codigo.isdigit() and objeto.validar(codigo):
+            objeto.marcar_usado()
+            request.session.pop('doble_factor_usuario_id', None)
+            usuario.intentos_fallidos = 0
+            usuario.save()
+            login(request, usuario, backend='Usuarios.backends.EmailBackend')
+            return redirect('inicio')
+        error = 'El código es incorrecto o venció. Revisa tu correo o pide uno nuevo.'
+
+    return render(request, 'verificar_doble_factor.html', {'error': error, 'correo': usuario.email})
+
+
+@require_POST
+def reenviar_doble_factor(request):
+    usuario_id = request.session.get('doble_factor_usuario_id')
+    usuario = Usuario.objects.filter(pk=usuario_id).first() if usuario_id else None
+    if usuario is None:
+        return redirect('login')
+    _enviar_codigo_doble_factor(usuario)
+    messages.info(request, 'Te enviamos un nuevo código.')
+    return redirect('verificar_doble_factor')
+
+
+@login_required
+def seguridad_cuenta(request):
+    if request.method == 'POST':
+        activar = request.POST.get('accion') == 'activar'
+        request.user.doble_factor_activo = activar
+        request.user.save(update_fields=['doble_factor_activo'])
+        if activar:
+            messages.success(request, 'Verificación en dos pasos activada.')
+        else:
+            messages.info(request, 'Verificación en dos pasos desactivada.')
+        return redirect('seguridad_cuenta')
+    return render(request, 'seguridad_cuenta.html')
 
 
 @login_required

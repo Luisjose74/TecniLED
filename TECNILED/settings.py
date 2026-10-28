@@ -156,3 +156,5 @@ MEDIA_ROOT = BASE_DIR / 'media'
 SESSION_COOKIE_AGE = 60 * 30          # 30 minutos sin actividad
 SESSION_SAVE_EVERY_REQUEST = True     # cada petición reinicia el contador
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+DEFAULT_FROM_EMAIL = 'TECNILED <no-reply@tecniled.local>'
