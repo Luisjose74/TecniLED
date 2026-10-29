@@ -22,4 +22,7 @@ urlpatterns = [
         # G1-149: entradas de inventario
     path('inventario/entradas/', views.entradas_lista, name='entradas_lista'),
     path('inventario/entradas/registrar/', views.registrar_entrada, name='registrar_entrada'),
+        # G1-152: salidas de inventario
+    path('inventario/salidas/', views.salidas_lista, name='salidas_lista'),
+    path('inventario/salidas/registrar/', views.registrar_salida, name='registrar_salida'),
 ]

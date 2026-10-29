@@ -9,8 +9,8 @@ from django.views.decorators.http import require_POST
 
 from django.db.models import Count, Q, Value
 
-from .forms import CategoriaForm, EntradaInventarioForm, InactivarProveedorForm, ProductoForm, ProveedorEditarForm, ProveedorForm
 from .models import Categoria, MovimientoInventario, Producto, Proveedor
+from .forms import CategoriaForm, EntradaInventarioForm, InactivarProveedorForm, ProductoForm, ProveedorEditarForm, ProveedorForm, SalidaInventarioForm
 
 @login_required
 @permission_required('Usuarios.gestionar_inventario', raise_exception=True)
@@ -368,3 +368,54 @@ def registrar_entrada(request):
             )
             return redirect('entradas_lista')
     return _render_entradas(request, form, abrir_modal=True)
+
+
+# ---------------------------------------------------------------------------
+# G1-152: salidas de inventario
+# ---------------------------------------------------------------------------
+def _render_salidas(request, form, abrir_modal=False):
+    """Dibuja el historial de salidas; si hubo un error, la plantilla reabre el modal."""
+    query = request.GET.get('q', '').strip()
+    movimientos = MovimientoInventario.objects.filter(
+        tipo=MovimientoInventario.Tipo.SALIDA
+    ).select_related('producto', 'usuario')
+    if query:
+        movimientos = movimientos.filter(Q(producto__nombre__icontains=query) | Q(producto__sku__icontains=query))
+    pagina = Paginator(movimientos, 10).get_page(request.GET.get('page'))
+    return render(request, 'productos/salidas_lista.html', {
+        'movimientos': pagina,
+        'query': query,
+        'form': form,
+        'abrir_modal': abrir_modal,
+    })
+
+
+@login_required
+@permission_required('Usuarios.gestionar_inventario', raise_exception=True)
+def salidas_lista(request):
+    return _render_salidas(request, SalidaInventarioForm())
+
+
+@login_required
+@permission_required('Usuarios.gestionar_inventario', raise_exception=True)
+@require_POST
+def registrar_salida(request):
+    form = SalidaInventarioForm(request.POST)
+    if form.is_valid():
+        producto = form.cleaned_data['producto']
+        cantidad = form.cleaned_data['cantidad']
+        try:
+            movimiento = MovimientoInventario.registrar_salida(
+                producto, cantidad, form.cleaned_data['motivo'],
+                usuario=request.user, observacion=form.cleaned_data['observacion'],
+            )
+        except ValueError as error:  # p. ej. otro usuario sacó stock justo antes de guardar
+            form.add_error(None, str(error))
+        else:
+            messages.success(
+                request,
+                f'Salida registrada: -{cantidad} unidades de "{producto.nombre}". '
+                f'Stock actual: {movimiento.stock_resultante}.'
+            )
+            return redirect('salidas_lista')
+    return _render_salidas(request, form, abrir_modal=True)
