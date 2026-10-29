@@ -335,3 +335,71 @@ class EntradaInventarioForm(forms.Form):
 
     def clean_observacion(self):
         return ' '.join((self.cleaned_data.get('observacion') or '').split())
+    
+    
+class SalidaInventarioForm(forms.Form):
+    """G1-152: registrar la salida de mercancía (producto + cantidad + motivo)."""
+    MAX_CANTIDAD = 100000
+
+    producto = forms.ModelChoiceField(
+        queryset=Producto.objects.none(),
+        label='Producto',
+        empty_label='Selecciona un producto',
+        error_messages={
+            'required': 'Selecciona el producto que sale.',
+            'invalid_choice': 'Selecciona un producto válido de la lista.',
+        },
+    )
+    cantidad = forms.IntegerField(
+        label='Cantidad que sale',
+        min_value=1,
+        max_value=MAX_CANTIDAD,
+        error_messages={
+            'required': 'Indica la cantidad que sale.',
+            'invalid': 'La cantidad debe ser un número entero.',
+            'min_value': 'La cantidad debe ser mayor a 0.',
+            'max_value': f'La cantidad no puede superar {MAX_CANTIDAD:,} unidades por salida.'.replace(',', '.'),
+        },
+    )
+    motivo = forms.ChoiceField(
+        choices=[('', 'Selecciona un motivo')] + list(MovimientoInventario.Motivo.choices),
+        label='Motivo',
+        error_messages={
+            'required': 'Selecciona el motivo de la salida.',
+            'invalid_choice': 'Selecciona un motivo válido de la lista.',
+        },
+    )
+    observacion = forms.CharField(
+        label='Observación (opcional)',
+        max_length=200,
+        required=False,
+        error_messages={'max_length': 'La observación no puede superar los 200 caracteres.'},
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['producto'].queryset = Producto.objects.filter(activo=True).order_by('nombre')
+        self.fields['producto'].label_from_instance = lambda p: f'{p.nombre} (SKU {p.sku}) · stock actual: {p.stock}'
+        clase_input = (
+            'w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 '
+            'rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none '
+            'focus:ring-2 focus:ring-[#F2AE30]'
+        )
+        for campo in self.fields.values():
+            campo.widget.attrs['class'] = clase_input
+        self.fields['cantidad'].widget.attrs.update({'min': '1', 'max': str(self.MAX_CANTIDAD), 'placeholder': 'Ej: 3'})
+        self.fields['observacion'].widget.attrs['placeholder'] = 'Ej: Panel dañado en bodega'
+
+    def clean_observacion(self):
+        return ' '.join((self.cleaned_data.get('observacion') or '').split())
+
+    def clean(self):
+        datos = super().clean()
+        producto, cantidad = datos.get('producto'), datos.get('cantidad')
+        # Regla de negocio: no se puede sacar más de lo que hay en stock
+        if producto and cantidad and cantidad > producto.stock:
+            self.add_error(
+                'cantidad',
+                f'Stock insuficiente: solo hay {producto.stock} unidades disponibles de "{producto.nombre}".'
+            )
+        return datos

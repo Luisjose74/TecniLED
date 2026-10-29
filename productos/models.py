@@ -146,9 +146,15 @@ class MovimientoInventario(models.Model):
     class Tipo(models.TextChoices):
         ENTRADA = 'entrada', 'Entrada'
         SALIDA = 'salida', 'Salida'  # reservado: lo usarán otras historias (p. ej. anular una orden de compra)
+        
+    class Motivo(models.TextChoices):
+        DANO = 'dano', 'Daño'
+        PERDIDA = 'perdida', 'Pérdida'
+        VENTA = 'venta', 'Venta'
 
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT, related_name='movimientos')
     tipo = models.CharField(max_length=10, choices=Tipo.choices, default=Tipo.ENTRADA)
+    motivo = models.CharField('Motivo', max_length=10, choices=Motivo.choices, blank=True)  # G1-152: solo en salidas
     cantidad = models.PositiveIntegerField()  # siempre positiva; el tipo indica si suma o resta
     stock_resultante = models.PositiveIntegerField()  # stock del producto justo después del movimiento
     observacion = models.CharField('Observación', max_length=200, blank=True)
@@ -181,5 +187,27 @@ class MovimientoInventario(models.Model):
             producto.save(update_fields=['stock', 'actualizado_en'])
             return cls.objects.create(
                 producto=producto, tipo=cls.Tipo.ENTRADA, cantidad=cantidad,
+                stock_resultante=producto.stock, usuario=usuario, observacion=observacion,
+            )
+            
+    @classmethod
+    def registrar_salida(cls, producto, cantidad, motivo, usuario=None, observacion=''):
+        """G1-152: descuenta `cantidad` del stock y guarda el movimiento, en una sola transacción."""
+        if cantidad is None or cantidad < 1:
+            raise ValueError('La cantidad debe ser mayor a 0.')
+        if motivo not in cls.Motivo.values:
+            raise ValueError('Selecciona un motivo válido para la salida.')
+        with transaction.atomic():
+            producto = Producto.objects.select_for_update().get(pk=producto.pk)
+            if not producto.activo:
+                raise ValueError('No se puede registrar salida en un producto inactivo.')
+            if cantidad > producto.stock:
+                raise ValueError(
+                    f'Stock insuficiente: solo hay {producto.stock} unidades disponibles de "{producto.nombre}".'
+                )
+            producto.stock -= cantidad
+            producto.save(update_fields=['stock', 'actualizado_en'])
+            return cls.objects.create(
+                producto=producto, tipo=cls.Tipo.SALIDA, motivo=motivo, cantidad=cantidad,
                 stock_resultante=producto.stock, usuario=usuario, observacion=observacion,
             )
