@@ -795,3 +795,103 @@ class EntradaInventarioTests(TestCase):
         self.assertContains(self.client.get(reverse('entradas_lista')), 'Página 1 de 2')
         self.assertContains(self.client.get(reverse('entradas_lista'), {'q': 'E1'}), 'Foco')
         self.assertNotContains(self.client.get(reverse('entradas_lista'), {'q': 'zzz'}), 'Foco</p>')
+        
+        
+class SalidaInventarioTests(TestCase):
+    """G1-152: registrar salidas de mercancía (daño, pérdida o venta)."""
+
+    def setUp(self):
+        self.usuario = crear_usuario('sal@t.com', Usuario.Rol.ADMINISTRADOR)
+        self.client.force_login(self.usuario)
+        self.p = crear_producto_bd(sku='S1', nombre='Reflector', stock=10)
+
+    def registrar(self, **cambios):
+        datos = {'producto': self.p.pk, 'cantidad': '4', 'motivo': 'dano', 'observacion': ''}
+        datos.update(cambios)
+        return self.client.post(reverse('registrar_salida'), datos)
+
+    def test_la_salida_descuenta_el_stock_y_queda_en_el_historial(self):
+        r = self.registrar(observacion='  Golpeado   en bodega ')
+        self.assertRedirects(r, reverse('salidas_lista'))
+        self.p.refresh_from_db()
+        self.assertEqual(self.p.stock, 6)
+        m = MovimientoInventario.objects.get()
+        self.assertEqual((m.cantidad, m.stock_resultante, m.tipo, m.motivo, m.usuario, m.observacion),
+                         (4, 6, 'salida', 'dano', self.usuario, 'Golpeado en bodega'))
+        r = self.client.get(reverse('salidas_lista'))
+        self.assertContains(r, '-4')
+        self.assertContains(r, 'Daño')
+        self.assertContains(r, 'sal@t.com')
+
+    def test_se_aceptan_los_tres_motivos(self):
+        for motivo in ('dano', 'perdida', 'venta'):
+            self.registrar(cantidad='1', motivo=motivo)
+        self.p.refresh_from_db()
+        self.assertEqual(self.p.stock, 7)
+        self.assertEqual(MovimientoInventario.objects.filter(tipo='salida').count(), 3)
+
+    def test_se_puede_sacar_todo_el_stock(self):
+        self.registrar(cantidad='10')
+        self.p.refresh_from_db()
+        self.assertEqual(self.p.stock, 0)
+
+    def test_stock_insuficiente_no_descuenta_y_reabre_el_modal(self):
+        r = self.registrar(cantidad='11')
+        self.assertContains(r, 'Stock insuficiente')
+        self.assertContains(r, 'data-abrir="si"')
+        self.p.refresh_from_db()
+        self.assertEqual(self.p.stock, 10)
+        self.assertEqual(MovimientoInventario.objects.count(), 0)
+
+    def test_datos_invalidos_no_cambian_el_stock(self):
+        casos = [
+            ({'cantidad': '0'}, 'mayor a 0'), ({'cantidad': '-3'}, 'mayor a 0'),
+            ({'cantidad': 'abc'}, 'número entero'), ({'cantidad': ''}, 'Indica la cantidad'),
+            ({'motivo': ''}, 'Selecciona el motivo'), ({'motivo': 'otro'}, 'motivo válido'),
+            ({'producto': ''}, 'Selecciona el producto'), ({'producto': '9999'}, 'producto válido'),
+            ({'observacion': 'x' * 201}, '200 caracteres'),
+        ]
+        for cambio, mensaje in casos:
+            r = self.registrar(**cambio)
+            self.assertContains(r, mensaje)
+            self.assertContains(r, 'data-abrir="si"')
+        self.p.refresh_from_db()
+        self.assertEqual(self.p.stock, 10)
+        self.assertEqual(MovimientoInventario.objects.count(), 0)
+
+    def test_un_producto_inactivo_no_tiene_salidas(self):
+        Producto.objects.filter(pk=self.p.pk).update(activo=False)
+        self.assertContains(self.registrar(), 'producto válido')
+        self.assertEqual(MovimientoInventario.objects.count(), 0)
+        with self.assertRaises(ValueError):
+            MovimientoInventario.registrar_salida(self.p, 1, 'dano')
+
+    def test_el_modelo_rechaza_cantidad_motivo_o_stock_invalidos(self):
+        with self.assertRaises(ValueError):
+            MovimientoInventario.registrar_salida(self.p, 0, 'dano')
+        with self.assertRaises(ValueError):
+            MovimientoInventario.registrar_salida(self.p, 1, 'otro')
+        with self.assertRaises(ValueError):
+            MovimientoInventario.registrar_salida(self.p, 11, 'venta')
+        self.assertEqual(MovimientoInventario.objects.count(), 0)
+
+    def test_las_salidas_no_aparecen_en_el_historial_de_entradas(self):
+        self.registrar()
+        self.assertContains(self.client.get(reverse('entradas_lista')), 'Aún no hay entradas registradas')
+        self.assertNotContains(self.client.get(reverse('salidas_lista')), 'Aún no hay salidas registradas')
+
+    def test_permisos_y_metodos(self):
+        self.assertEqual(self.client.get(reverse('registrar_salida')).status_code, 405)
+        self.client.force_login(crear_usuario('inv2@t.com', Usuario.Rol.CONTROL_INVENTARIO))
+        self.assertEqual(self.client.get(reverse('salidas_lista')).status_code, 200)
+        self.client.force_login(crear_usuario('cli3@t.com', Usuario.Rol.CLIENTE))
+        self.assertEqual(self.client.get(reverse('salidas_lista')).status_code, 403)
+        self.assertEqual(self.registrar().status_code, 403)
+
+    def test_busqueda_y_paginacion_del_historial(self):
+        Producto.objects.filter(pk=self.p.pk).update(stock=50)
+        for _ in range(12):
+            MovimientoInventario.registrar_salida(self.p, 1, 'venta', self.usuario)
+        self.assertContains(self.client.get(reverse('salidas_lista')), 'Página 1 de 2')
+        self.assertContains(self.client.get(reverse('salidas_lista'), {'q': 'S1'}), 'Reflector')
+        self.assertNotContains(self.client.get(reverse('salidas_lista'), {'q': 'zzz'}), 'Reflector</p>')

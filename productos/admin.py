@@ -56,11 +56,12 @@ class CategoriaAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoInventario)
 class MovimientoInventarioAdmin(admin.ModelAdmin):
-    list_display = ('fecha', 'producto', 'tipo', 'cantidad', 'stock_resultante', 'usuario')
-    list_filter = ('tipo',)
+
+    list_display = ('fecha', 'producto', 'tipo', 'motivo', 'cantidad', 'stock_resultante', 'usuario')
+    list_filter = ('tipo', 'motivo')
     search_fields = ('producto__nombre', 'producto__sku')
     # Es un historial: se consulta, no se edita desde el admin
-    readonly_fields = ('producto', 'tipo', 'cantidad', 'stock_resultante', 'observacion', 'usuario', 'fecha')
+    readonly_fields = ('producto', 'tipo', 'motivo', 'cantidad', 'stock_resultante', 'observacion', 'usuario', 'fecha')
 
     def has_add_permission(self, request):
         return False
