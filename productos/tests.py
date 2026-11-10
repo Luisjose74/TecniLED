@@ -1,21 +1,18 @@
 import shutil
 import tempfile
+from datetime import timedelta
 from io import BytesIO
 
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from PIL import Image
 
-from Usuarios.models import Usuario
-from productos.models import Proveedor
-
-from datetime import timedelta
-from django.utils import timezone
 from productos.forms import ProductoForm
-
-from productos.models import Categoria, MovimientoInventario, Producto
+from productos.models import Categoria, MovimientoInventario, Producto, Proveedor
+from Usuarios.models import Usuario
 
 # Las imágenes de los tests se guardan aquí y se borran al terminar
 MEDIA_TEMPORAL = tempfile.mkdtemp()

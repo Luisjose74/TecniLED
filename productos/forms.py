@@ -1,10 +1,10 @@
-from django import forms
-
-from django.db.models import Q
-from django.core.files.uploadedfile import UploadedFile
 import re
 
-from .models import Categoria, MovimientoInventario, Producto, Proveedor
+from django import forms
+from django.core.files.uploadedfile import UploadedFile
+from django.db.models import Q
+
+from .models import Categoria, Producto, Proveedor
 
 
 class ProductoForm(forms.ModelForm):
@@ -69,10 +69,10 @@ class ProductoForm(forms.ModelForm):
                 'min_value': 'El stock no puede ser negativo.',
             },
             'imagen': {
-            'invalid_image': 'El archivo no es una imagen válida. Usa PNG, JPG o WEBP.',
+                'invalid_image': 'El archivo no es una imagen válida. Usa PNG, JPG o WEBP.',
             },
             'texto_alternativo': {
-            'max_length': 'El texto alternativo no puede superar los 125 caracteres.',
+                'max_length': 'El texto alternativo no puede superar los 125 caracteres.',
             },
             'descripcion': {'required': 'La descripción corta es obligatoria.'},
             'instalacion': {'required': 'El campo Uso e Instalación es obligatorio.'},
