@@ -173,6 +173,8 @@ class CargarImagenTests(TestCase):
             'categoria': categoria('Interiores').pk,
             'precio': '65.00', 'precio_oferta': '', 'stock': '8',
             'descripcion': 'Lámpara.', 'instalacion': 'Colgar del techo.',
+            # G1-1019: con imagen, el texto alternativo es obligatorio
+            'texto_alternativo': 'Lámpara colgante negra con pantalla de metal',
         }
         datos.update(overrides)
         return datos

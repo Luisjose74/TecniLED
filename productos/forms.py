@@ -12,7 +12,7 @@ class ProductoForm(forms.ModelForm):
         model = Producto
         fields = [
             'sku', 'nombre', 'categoria', 'proveedor', 'precio', 'precio_oferta',
-            'stock', 'imagen', 'descripcion', 'instalacion',
+            'stock', 'imagen', 'texto_alternativo', 'descripcion', 'instalacion',
             'especificaciones',  # NUEVO (HU G1-144)
         ]
         labels = {
@@ -24,6 +24,7 @@ class ProductoForm(forms.ModelForm):
             'precio_oferta': 'Precio de oferta',
             'stock': 'Existencias disponibles',
             'imagen': 'Imagen',
+            'texto_alternativo': 'Texto alternativo de la imagen',
             'descripcion': 'Descripción Corta',
             'instalacion': 'Uso e Instalación',
             'especificaciones': 'Características Técnicas',  
@@ -68,7 +69,10 @@ class ProductoForm(forms.ModelForm):
                 'min_value': 'El stock no puede ser negativo.',
             },
             'imagen': {
-                'invalid_image': 'El archivo no es una imagen válida. Usa PNG, JPG o WEBP.',
+            'invalid_image': 'El archivo no es una imagen válida. Usa PNG, JPG o WEBP.',
+            },
+            'texto_alternativo': {
+            'max_length': 'El texto alternativo no puede superar los 125 caracteres.',
             },
             'descripcion': {'required': 'La descripción corta es obligatoria.'},
             'instalacion': {'required': 'El campo Uso e Instalación es obligatorio.'},
@@ -153,6 +157,22 @@ class ProductoForm(forms.ModelForm):
             if formato not in ('JPEG', 'PNG', 'WEBP'):
                 raise forms.ValidationError('Formato no permitido. Usa PNG, JPG o WEBP.')
         return imagen
+    
+        # ---------- G1-1019: texto alternativo obligatorio si hay imagen ----------
+    def clean_texto_alternativo(self):
+        texto = self.cleaned_data.get('texto_alternativo') or ''
+        return ' '.join(texto.split())  # quita espacios de sobra
+
+    def clean(self):
+        cleaned_data = super().clean()
+        imagen = cleaned_data.get('imagen')
+        texto = cleaned_data.get('texto_alternativo')
+        if imagen and not texto:
+            self.add_error(
+                'texto_alternativo',
+                'Describe la imagen para las personas que usan lectores de pantalla.',
+            )
+        return cleaned_data
 
 
 class ProveedorForm(forms.ModelForm):
