@@ -1,0 +1,160 @@
+{% extends 'admin_base.html' %}
+{% block title %}Editar orden {{ orden.numero_factura }} - TECNILED{% endblock %}
+{% block titulo_seccion %}Compras a proveedores{% endblock %}
+{% block migas_intermedias %}
+{% url 'ordenes_lista' as url_lista %}
+{% include 'partials/miga.html' with enlace=url_lista texto='Órdenes de compra' %}
+{% endblock %}
+{% block migas_actual %}Editar orden{% endblock %}
+{% block content %}
+<div
+    class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-3xl mx-auto shadow-2xl border border-gray-100 dark:border-gray-700 flex flex-col">
+
+    <div
+        class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start shrink-0">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Editar
+                orden {{ orden.numero_factura }}</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Corrige el proveedor o los productos. El total se
+                recalcula al guardar.
+            </p>
+        </div>
+        <a href="{% url 'orden_detalle' orden.pk %}" title="Cerrar"
+            aria-label="Cerrar"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+            <svg aria-hidden="true" class="w-6 h-6" fill="none"
+                stroke="currentColor" viewBox="0 0 24 24"><path
+                    stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </a>
+    </div>
+
+    <form method="post" class="p-6 space-y-4">
+        {% csrf_token %}
+
+        {% if form.errors or formset.total_error_count %}
+        <div role="alert"
+            class="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm font-medium rounded-xl border border-red-100 dark:border-red-800">
+            No se pudo guardar la orden. Revisa los campos marcados en rojo.
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label
+                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                    for="id_numero_factura">Número de orden/factura *</label>
+                {{ form.numero_factura }}
+                {% for error in form.numero_factura.errors %}<p
+                    class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+            </div>
+            <div>
+                <label
+                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                    for="id_fecha">Fecha *</label>
+                {{ form.fecha }}
+                {% for error in form.fecha.errors %}<p
+                    class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+            </div>
+        </div>
+
+        <div>
+            <label
+                class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                for="id_proveedor">Proveedor *</label>
+            {{ form.proveedor }}
+            {% for error in form.proveedor.errors %}<p
+                class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+            {% for error in form.non_field_errors %}<p
+                class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Solo
+                aparecen proveedores activos. El proveedor actual se
+                conserva aunque esté inactivo.</p>
+        </div>
+
+        <div role="group" aria-labelledby="etiqueta-productos-orden">
+            <p id="etiqueta-productos-orden"
+                class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Productos
+                *</p>
+
+            {{ formset.management_form }}
+
+            <div
+                class="hidden sm:grid grid-cols-12 gap-3 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                <span class="col-span-5">Producto</span>
+                <span class="col-span-2">Cantidad</span>
+                <span class="col-span-3">Precio unitario</span>
+                <span class="col-span-1 text-center">Eliminar</span>
+            </div>
+
+            <div id="lineas" class="space-y-3">
+                {% for f in formset %}
+                {% include 'compras/linea_orden.html' with f=f %}
+                {% endfor %}
+            </div>
+
+            {% for error in formset.non_form_errors %}<p
+                class="text-xs text-red-500 mt-2">{{ error }}</p>{% endfor %}
+
+            <button type="button" id="agregar-linea"
+                class="mt-3 px-4 py-2 text-sm font-semibold text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-500/10 rounded-xl transition-colors">
+                + Agregar producto
+            </button>
+
+            {# Fila "molde" para las líneas nuevas #}
+            <template id="plantilla-linea">
+                {% include 'compras/linea_orden.html' with f=formset.empty_form %}
+            </template>
+        </div>
+
+        <div
+            class="pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-gray-100 dark:border-gray-700">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Total actual:
+                <span
+                    class="font-bold text-gray-900 dark:text-white">${{ orden.total|floatformat:2 }}</span>
+            </p>
+            <div class="flex justify-end gap-3 shrink-0">
+                <a href="{% url 'orden_detalle' orden.pk %}"
+                    class="px-5 py-2.5 text-gray-600 dark:text-gray-300 font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                    Cancelar
+                </a>
+                <button type="submit"
+                    class="px-5 py-2.5 bg-[#F2AE30] hover:bg-[#d99b28] text-black font-bold rounded-xl transition-colors shadow-lg">
+                    Guardar cambios
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    (function () {
+    var contenedor = document.getElementById('lineas');
+    var plantilla = document.getElementById('plantilla-linea');
+    var total = document.querySelector('input[name$="-TOTAL_FORMS"]');
+
+  // Agregar una fila nueva copiando el molde
+    document.getElementById('agregar-linea').addEventListener('click', function () {
+    var indice = parseInt(total.value, 10);
+    contenedor.insertAdjacentHTML('beforeend', plantilla.innerHTML.replace(/__prefix__/g, indice));
+    total.value = indice + 1;
+    });
+
+  // Quitar una fila: las líneas ya guardadas se marcan con DELETE (así el
+  // servidor sabe que debe borrarlas); las nuevas se quitan del formulario.
+    contenedor.addEventListener('click', function (e) {
+    var boton = e.target.closest('.js-quitar-linea');
+    if (!boton) { return; }
+    var fila = boton.closest('.linea-orden');
+    var borrar = fila.querySelector('input[name$="-DELETE"]');
+    if (borrar) {
+      borrar.checked = true;
+      fila.classList.add('hidden');
+    } else {
+      fila.remove();
+    }
+    });
+    })();
+</script>
+{% endblock %}

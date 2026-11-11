@@ -1,7 +1,7 @@
 <div class="linea-orden grid grid-cols-12 gap-3 items-start">
     {% for oculto in f.hidden_fields %}{{ oculto }}{% endfor %}
 
-    <div class="col-span-12 sm:col-span-6">
+    <div class="col-span-12 sm:col-span-5">
         {{ f.producto }}
         {% for error in f.producto.errors %}<p
             class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
@@ -17,6 +17,14 @@
         {{ f.precio_unitario }}
         {% for error in f.precio_unitario.errors %}<p
             class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+    </div>
+
+    <div class="col-span-1 flex justify-center pt-3">
+        {% if f.DELETE %}
+        <label class="sr-only"
+            for="{{ f.DELETE.id_for_label }}">Eliminar esta línea</label>
+        {{ f.DELETE }}
+        {% endif %}
     </div>
 
     <div class="col-span-1 flex justify-end">

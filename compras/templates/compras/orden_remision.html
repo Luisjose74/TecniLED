@@ -1,0 +1,108 @@
+{% extends 'admin_base.html' %}
+{% block title %}Adjuntar remisión - TECNILED{% endblock %}
+{% block titulo_seccion %}Compras a proveedores{% endblock %}
+{% block migas_intermedias %}
+{% url 'ordenes_lista' as url_lista %}
+{% include 'partials/miga.html' with enlace=url_lista texto='Órdenes de compra' %}
+<li class="flex items-center gap-2">
+    <span class="text-gray-300 dark:text-gray-600" aria-hidden="true">/</span>
+    <a href="{% url 'orden_detalle' orden.pk %}"
+        class="font-medium text-gray-400 dark:text-gray-500 hover:text-[#F2AE30] dark:hover:text-[#F2AE30] transition-colors">Orden
+        {{ orden.numero_factura }}</a>
+</li>
+{% endblock %}
+{% block migas_actual %}Adjuntar remisión{% endblock %}
+{% block content %}
+<div
+    class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl mx-auto shadow-2xl border border-gray-100 dark:border-gray-700">
+
+    <div
+        class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Adjuntar
+                remisión o factura</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Orden {{ orden.numero_factura }} · {{ orden.proveedor.nombre }}
+                · {{ orden.fecha|date:"d/m/Y" }}
+            </p>
+        </div>
+        <a href="{% url 'orden_detalle' orden.pk %}" title="Cerrar"
+            aria-label="Cerrar"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+            <svg aria-hidden="true" class="w-6 h-6" fill="none"
+                stroke="currentColor" viewBox="0 0 24 24"><path
+                    stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="p-6 space-y-4">
+        {% csrf_token %}
+
+        {% if form.errors %}
+        <div role="alert"
+            class="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm font-medium rounded-xl border border-red-100 dark:border-red-800">
+            No se pudo adjuntar el archivo. Revisa el documento e intenta de
+            nuevo.
+        </div>
+        {% endif %}
+
+        {% if orden.tiene_remision %}
+        <div
+            class="p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 text-sm rounded-xl border border-amber-200 dark:border-amber-800">
+            Esta orden ya tiene adjunto
+            <a href="{{ orden.remision.url }}" target="_blank" rel="noopener"
+                class="font-semibold underline break-all">{{ orden.nombre_remision }}</a>.
+            Si subes otro archivo, reemplazará al anterior.
+        </div>
+        {% endif %}
+
+        <div>
+            <label
+                class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                for="id_remision">Archivo de la remisión o factura *</label>
+            {{ form.remision }}
+            {% for error in form.remision.errors %}<p
+                class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+            <p id="ayuda-remision"
+                class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Formatos permitidos: PDF, JPG o PNG. Tamaño máximo 5 MB.
+            </p>
+        </div>
+
+        <div class="pt-4 flex justify-end gap-3">
+            <a href="{% url 'orden_detalle' orden.pk %}"
+                class="px-5 py-2.5 text-gray-600 dark:text-gray-300 font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                Cancelar
+            </a>
+            <button type="submit"
+                class="px-5 py-2.5 bg-[#F2AE30] hover:bg-[#d99b28] text-black font-bold rounded-xl transition-colors shadow-lg">
+                Adjuntar archivo
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    (function () {
+    var archivo = document.getElementById('id_remision');
+    if (!archivo) { return; }
+    var formatos = ['application/pdf', 'image/jpeg', 'image/png'];
+
+  // Validación inmediata (el servidor vuelve a validar siempre)
+    archivo.addEventListener('change', function () {
+    var elegido = archivo.files && archivo.files[0];
+    if (!elegido) { return; }
+    var extension = (elegido.name.split('.').pop() || '').toLowerCase();
+    if (formatos.indexOf(elegido.type) === -1 && ['pdf', 'jpg', 'jpeg', 'png'].indexOf(extension) === -1) {
+      archivo.setCustomValidity('Solo se permiten archivos PDF o imágenes JPG/PNG.');
+    } else if (elegido.size > 5 * 1024 * 1024) {
+      archivo.setCustomValidity('El archivo no puede superar los 5 MB.');
+    } else {
+      archivo.setCustomValidity('');
+    }
+    archivo.reportValidity();
+    });
+    })();
+</script>
+{% endblock %}
