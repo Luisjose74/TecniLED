@@ -22,6 +22,16 @@
     {% endfor %}
   </div>
 
+  {% if tipo == 'compras' %}
+  <section aria-labelledby="titulo-reporte-compras" class="space-y-4">
+    <div>
+      <h2 id="titulo-reporte-compras" class="text-xl font-bold text-gray-900 dark:text-white">Historial por proveedor</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Consulta las compras registradas a cada proveedor y su detalle por periodo.</p>
+    </div>
+    {% include 'reportes/reporte_compras.html' %}
+  </section>
+  {% endif %}
+
   {% if not tipo %}
   <div class="bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 p-12 text-center text-gray-500 dark:text-gray-400">
     <p class="font-medium">Selecciona un reporte para comenzar</p>
