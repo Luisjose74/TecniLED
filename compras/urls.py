@@ -8,5 +8,7 @@ urlpatterns = [
     path('compras/exportar/', views.exportar_ordenes, name='exportar_ordenes'),
     path('compras/<int:pk>/', views.orden_detalle, name='orden_detalle'),
     path('compras/<int:pk>/editar/', views.editar_orden, name='editar_orden'),
+    path('compras/<int:pk>/recibir/', views.recibir_orden, name='recibir_orden'),
+    path('compras/<int:pk>/anular/', views.anular_orden, name='anular_orden'),
     path('compras/<int:pk>/remision/', views.adjuntar_remision, name='adjuntar_remision'),
 ]

@@ -14,6 +14,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -211,6 +212,44 @@ def editar_orden(request, pk):
         'form': form,
         'formset': formset,
     })
+
+
+def _cambiar_estado(request, pk, nuevo_estado):
+    """Marca una orden pendiente como recibida o anulada (no hay vuelta atrás)."""
+    orden = get_object_or_404(OrdenCompra, pk=pk)
+    if not orden.es_editable:
+        messages.info(
+            request,
+            f'La orden "{orden.numero_factura}" ya está '
+            f'{orden.get_estado_display().lower()}; su estado solo se puede '
+            'cambiar desde el administrador.',
+        )
+        return redirect('orden_detalle', pk=orden.pk)
+
+    orden.estado = nuevo_estado
+    orden.save(update_fields=['estado', 'actualizado_en'])
+    etiqueta = dict(OrdenCompra.Estado.choices)[nuevo_estado]
+    messages.success(
+        request,
+        f'La orden "{orden.numero_factura}" se marcó como {etiqueta.lower()}.',
+    )
+    return redirect('orden_detalle', pk=orden.pk)
+
+
+@login_required
+@permission_required('Usuarios.gestionar_compras', raise_exception=True)
+@require_POST
+def recibir_orden(request, pk):
+    """Marca la orden como recibida cuando llega la mercancía del proveedor."""
+    return _cambiar_estado(request, pk, OrdenCompra.Estado.RECIBIDA)
+
+
+@login_required
+@permission_required('Usuarios.gestionar_compras', raise_exception=True)
+@require_POST
+def anular_orden(request, pk):
+    """Anula una orden pendiente que finalmente no se va a comprar."""
+    return _cambiar_estado(request, pk, OrdenCompra.Estado.ANULADA)
 
 
 @login_required

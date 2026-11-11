@@ -424,6 +424,80 @@ def imagen_valida(nombre='remision.png'):
     )
 
 
+@override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])
+class CambioEstadoOrdenTests(BaseComprasTests):
+    """Marcar una orden como recibida o anulada desde el detalle."""
+
+    def setUp(self):
+        super().setUp()
+        self.orden = self.crear_orden('F-EST')
+
+    def test_recibir_marca_la_orden_como_recibida(self):
+        resp = self.client.post(
+            reverse('recibir_orden', args=[self.orden.pk]), follow=True,
+        )
+        self.orden.refresh_from_db()
+        self.assertEqual(self.orden.estado, OrdenCompra.Estado.RECIBIDA)
+        self.assertRedirects(
+            resp, reverse('orden_detalle', args=[self.orden.pk]),
+        )
+        self.assertContains(resp, 'se marcó como recibida')
+
+    def test_anular_marca_la_orden_como_anulada(self):
+        resp = self.client.post(
+            reverse('anular_orden', args=[self.orden.pk]), follow=True,
+        )
+        self.orden.refresh_from_db()
+        self.assertEqual(self.orden.estado, OrdenCompra.Estado.ANULADA)
+        self.assertContains(resp, 'se marcó como anulada')
+
+    def test_no_se_puede_cambiar_el_estado_de_una_orden_recibida(self):
+        self.orden.estado = OrdenCompra.Estado.RECIBIDA
+        self.orden.save(update_fields=['estado'])
+        resp = self.client.post(
+            reverse('anular_orden', args=[self.orden.pk]), follow=True,
+        )
+        self.orden.refresh_from_db()
+        self.assertEqual(self.orden.estado, OrdenCompra.Estado.RECIBIDA)
+        self.assertContains(resp, 'ya está recibida')
+
+    def test_no_se_puede_volver_a_recibir_una_orden_anulada(self):
+        self.orden.estado = OrdenCompra.Estado.ANULADA
+        self.orden.save(update_fields=['estado'])
+        resp = self.client.post(
+            reverse('recibir_orden', args=[self.orden.pk]), follow=True,
+        )
+        self.orden.refresh_from_db()
+        self.assertEqual(self.orden.estado, OrdenCompra.Estado.ANULADA)
+        self.assertContains(resp, 'ya está anulada')
+
+    def test_los_cambios_de_estado_solo_aceptan_post(self):
+        for nombre in ('recibir_orden', 'anular_orden'):
+            resp = self.client.get(reverse(nombre, args=[self.orden.pk]))
+            self.assertEqual(resp.status_code, 405, nombre)
+        self.orden.refresh_from_db()
+        self.assertEqual(self.orden.estado, OrdenCompra.Estado.PENDIENTE)
+
+    def test_requiere_permiso_para_cambiar_el_estado(self):
+        self.client.force_login(self.cliente)
+        for nombre in ('recibir_orden', 'anular_orden'):
+            resp = self.client.post(reverse(nombre, args=[self.orden.pk]))
+            self.assertEqual(resp.status_code, 403, nombre)
+        self.orden.refresh_from_db()
+        self.assertEqual(self.orden.estado, OrdenCompra.Estado.PENDIENTE)
+
+    def test_el_detalle_muestra_las_acciones_solo_si_esta_pendiente(self):
+        resp = self.client.get(reverse('orden_detalle', args=[self.orden.pk]))
+        self.assertContains(resp, 'Marcar como recibida')
+        self.assertContains(resp, 'Anular orden')
+
+        self.orden.estado = OrdenCompra.Estado.RECIBIDA
+        self.orden.save(update_fields=['estado'])
+        resp = self.client.get(reverse('orden_detalle', args=[self.orden.pk]))
+        self.assertNotContains(resp, 'Marcar como recibida')
+        self.assertNotContains(resp, 'Anular orden')
+
+
 @override_settings(
     PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'],
     MEDIA_ROOT=MEDIA_TEMPORAL,
