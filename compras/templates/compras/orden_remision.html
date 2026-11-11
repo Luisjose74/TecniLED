@@ -14,7 +14,7 @@
 {% block migas_actual %}Adjuntar remisión{% endblock %}
 {% block content %}
 <div
-    class="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl mx-auto shadow-2xl border border-gray-100 dark:border-gray-700">
+    class="modal-remision bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl mx-auto shadow-2xl border border-gray-100 dark:border-gray-700">
 
     <div
         class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start">
@@ -61,18 +61,26 @@
             <label
                 class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
                 for="id_remision">Archivo de la remisión o factura *</label>
-            {{ form.remision }}
+            <p id="ayuda-remision"
+                class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                {% if orden.tiene_remision %}
+                Puedes reemplazar el archivo actual subiendo uno nuevo (PDF, JPG o PNG). Al adjuntarlo, el archivo anterior será sustituido automáticamente. Tamaño máximo: 5 MB.
+                {% else %}
+                Sube el archivo de la remisión o factura (PDF, JPG o PNG). Tamaño máximo: 5 MB.
+                {% endif %}
+            </p>
+            <div class="campo-remision">
+                {# Solo el selector: ClearableFileInput añadiría "Actualmente / Limpiar / Modificar". #}
+                <input type="file" name="{{ form.remision.html_name }}"
+                    id="{{ form.remision.id_for_label }}"{% for nombre, valor in form.remision.field.widget.attrs.items %}{% if valor is not False %} {{ nombre }}{% if valor is not True %}="{{ valor|stringformat:'s' }}"{% endif %}{% endif %}{% endfor %}{% if not orden.tiene_remision %} required{% endif %}>
+            </div>
             {% for error in form.remision.errors %}<p
                 class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
-            <p id="ayuda-remision"
-                class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Formatos permitidos: PDF, JPG o PNG. Tamaño máximo 5 MB.
-            </p>
         </div>
 
         <div class="pt-4 flex justify-end gap-3">
             <a href="{% url 'orden_detalle' orden.pk %}"
-                class="px-5 py-2.5 text-gray-600 dark:text-gray-300 font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                class="px-5 py-2.5 text-gray-600 dark:text-gray-300 font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors">
                 Cancelar
             </a>
             <button type="submit"

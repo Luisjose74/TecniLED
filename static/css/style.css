@@ -264,6 +264,19 @@ html.dark .boton-calendario:hover {
   height: 1.15rem;
 }
 
+/* ---------- Modal de remisión ----------
+   El campo de archivo ya no imprime el bloque "Actualmente: / Limpiar" de
+   Django (ver template/django/forms/widgets/clearable_file_input.html),
+   así que basta con aclarar el texto del modal y forzar el esquema oscuro
+   del selector nativo. En modo claro no se cambia ningún color. */
+html.dark .modal-remision {
+  color: #E5E7EB;                     /* gray-200 */
+}
+html.dark .campo-remision input[type="file"] {
+  color-scheme: dark;
+  color: #FFFFFF;
+}
+
 /* ---------- Personas que prefieren menos movimiento ---------- */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
