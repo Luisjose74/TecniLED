@@ -324,6 +324,81 @@ class PlantillasBaseTests(TestCase):
         self.assertTemplateUsed(resp, 'partials/footer.html')
 
 
+class MenuDesplegableReportesTests(TestCase):
+    """Reportes es un desplegable y su única opción es Copias de seguridad."""
+
+    def setUp(self):
+        self.admin = Usuario.objects.create_user(
+            username='menu.admin@tecniled.com',
+            email='menu.admin@tecniled.com',
+            password='Prueba123!',
+            rol=Usuario.Rol.ADMINISTRADOR,
+        )
+        self.client.force_login(self.admin)
+
+    def dar_permiso_respaldos(self):
+        from django.contrib.auth.models import Permission
+        self.admin.user_permissions.add(
+            Permission.objects.get(codename='gestionar_respaldos'),
+        )
+
+    def bloque_opciones(self, html):
+        return re.search(
+            r'<div id="menu-reportes-opciones"[\s\S]*?</div>', html,
+        ).group(0)
+
+    def clases_opciones(self, html):
+        clases = re.search(
+            r'<div id="menu-reportes-opciones"[^>]*class="([^"]*)"', html,
+        ).group(1)
+        return clases.split()
+
+    def test_sin_permiso_de_respaldos_reportes_sigue_siendo_enlace(self):
+        resp = self.client.get(reverse('usuarios_lista'))
+        html = resp.content.decode()
+        self.assertIn('href="' + reverse('reportes_inicio') + '"', html)
+        self.assertNotIn('id="menu-reportes-boton"', html)
+        self.assertNotIn('Copias de seguridad', html)
+
+    def test_con_permiso_de_respaldos_reportes_es_un_desplegable(self):
+        self.dar_permiso_respaldos()
+        resp = self.client.get(reverse('usuarios_lista'))
+        html = resp.content.decode()
+
+        self.assertIn('id="menu-reportes-boton"', html)
+        self.assertIn('aria-controls="menu-reportes-opciones"', html)
+        self.assertIn('chevron-menu', html)
+
+        # Cerrado por defecto y con Copias de seguridad dentro, una sola vez
+        opciones = self.bloque_opciones(html)
+        self.assertIn('hidden', self.clases_opciones(html))
+        self.assertIn(reverse('respaldos_lista'), opciones)
+        self.assertEqual(html.count(reverse('respaldos_lista')), 1)
+        self.assertEqual(html.count('Copias de seguridad'), 1)
+
+        # Compras a proveedores no vive dentro de este desplegable
+        self.assertNotIn(reverse('ordenes_lista'), opciones)
+
+    def test_en_copias_de_seguridad_el_desplegable_aparece_abierto(self):
+        self.dar_permiso_respaldos()
+        resp = self.client.get(reverse('respaldos_lista'))
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode()
+
+        self.assertIn('aria-expanded="true"', html)
+        opciones = self.bloque_opciones(html)
+        self.assertNotIn('hidden', self.clases_opciones(html))
+        self.assertIn('aria-current="page"', opciones)
+
+    def test_el_boton_del_desplegable_tiene_estado_para_lectores(self):
+        self.dar_permiso_respaldos()
+        resp = self.client.get(reverse('usuarios_lista'))
+        html = resp.content.decode()
+        self.assertRegex(
+            html, r'id="menu-reportes-boton"[\s\S]{0,120}aria-expanded="false"',
+        )
+
+
 class BloqueoCuentaTests(TestCase):
     def setUp(self):
         self.usuario = Usuario.objects.create_user(

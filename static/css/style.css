@@ -277,6 +277,17 @@ html.dark .campo-remision input[type="file"] {
   color: #FFFFFF;
 }
 
+/* ---------- Menú lateral desplegable ----------
+   La flecha del grupo (Reportes) apunta hacia abajo cuando está cerrado y
+   gira hacia arriba cuando se despliega. El estado lo marca aria-expanded
+   en el botón, así que el giro también funciona sin JavaScript. */
+.chevron-menu {
+  transition: transform 0.2s ease;
+}
+.menu-desplegable button[aria-expanded="true"] .chevron-menu {
+  transform: rotate(180deg);
+}
+
 /* ---------- Personas que prefieren menos movimiento ---------- */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

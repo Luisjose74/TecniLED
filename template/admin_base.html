@@ -22,7 +22,7 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261113">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261114">
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
 {# Accesibilidad: permite saltar el menú con el teclado #}
@@ -99,18 +99,33 @@
       </a>
       {% endif %}
     
-      {% if perms.Usuarios.gestionar_inventario %}
+      {% if perms.Usuarios.gestionar_inventario or perms.sistema.gestionar_respaldos %}
+      {% if perms.sistema.gestionar_respaldos %}
+      {# Reportes es un desplegable; su única opción es Copias de seguridad. #}
+      <div class="menu-desplegable">
+        <button type="button" id="menu-reportes-boton"
+          aria-controls="menu-reportes-opciones"
+          aria-expanded="{% if nombre == 'respaldos_lista' or nombre == 'respaldos_restaurar' %}true{% else %}false{% endif %}"
+          class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all {% if nombre == 'reportes_inicio' %}bg-[#F2AE30] text-black shadow-md shadow-[#F2AE30]/20{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50{% endif %}">
+          <svg aria-hidden="true" class="w-5 h-5 shrink-0 {% if nombre == 'reportes_inicio' %}text-black{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+          <span class="flex-1 text-left">Reportes</span>
+          <svg aria-hidden="true" class="chevron-menu w-4 h-4 shrink-0 {% if nombre == 'reportes_inicio' %}text-black{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+
+        <div id="menu-reportes-opciones"
+          class="mt-1 ml-5 pl-4 border-l-2 border-gray-100 dark:border-gray-700 space-y-1 {% if nombre == 'respaldos_lista' or nombre == 'respaldos_restaurar' %}{% else %}hidden{% endif %}">
+          <a href="{% url 'respaldos_lista' %}" {% if nombre == 'respaldos_lista' or nombre == 'respaldos_restaurar' %}aria-current="page"{% endif %} class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all {% if nombre == 'respaldos_lista' or nombre == 'respaldos_restaurar' %}bg-[#F2AE30] text-black shadow-md shadow-[#F2AE30]/20{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50{% endif %}">
+            <svg aria-hidden="true" class="w-4 h-4 shrink-0 {% if nombre == 'respaldos_lista' or nombre == 'respaldos_restaurar' %}text-black{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+            Copias de seguridad
+          </a>
+        </div>
+      </div>
+      {% else %}
       <a href="{% url 'reportes_inicio' %}" {% if nombre == 'reportes_inicio' %}aria-current="page"{% endif %} class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all {% if nombre == 'reportes_inicio' %}bg-[#F2AE30] text-black shadow-md shadow-[#F2AE30]/20{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50{% endif %}">
         <svg aria-hidden="true" class="w-5 h-5 {% if nombre == 'reportes_inicio' %}text-black{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
         Reportes
       </a>
       {% endif %}
-
-      {% if perms.sistema.gestionar_respaldos %}
-      <a href="{% url 'respaldos_lista' %}" {% if nombre == 'respaldos_lista' or nombre == 'respaldos_restaurar' %}aria-current="page"{% endif %} class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all {% if nombre == 'respaldos_lista' or nombre == 'respaldos_restaurar' %}bg-[#F2AE30] text-black shadow-md shadow-[#F2AE30]/20{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50{% endif %}">
-        <svg aria-hidden="true" class="w-5 h-5 {% if nombre == 'respaldos_lista' or nombre == 'respaldos_restaurar' %}text-black{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" ><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
-        Copias de seguridad
-      </a>
       {% endif %}
 
       <a href="{% url 'ayuda' %}" {% if nombre == 'ayuda' %}aria-current="page"{% endif %} class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all {% if nombre == 'ayuda' %}bg-[#F2AE30] text-black shadow-md shadow-[#F2AE30]/20{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50{% endif %}">
@@ -239,6 +254,19 @@
     }
     if (escritorio.addEventListener) escritorio.addEventListener('change', alCambiarEscritorio);
     else if (escritorio.addListener) escritorio.addListener(alCambiarEscritorio);
+  })();
+
+  // Menú desplegable del sidebar: Reportes muestra y oculta sus opciones.
+  (function () {
+    var boton = document.getElementById('menu-reportes-boton');
+    var opciones = document.getElementById('menu-reportes-opciones');
+    if (!boton || !opciones) return;
+
+    boton.addEventListener('click', function () {
+      var abierto = boton.getAttribute('aria-expanded') === 'true';
+      boton.setAttribute('aria-expanded', abierto ? 'false' : 'true');
+      opciones.classList.toggle('hidden', abierto);
+    });
   })();
 </script>
 
