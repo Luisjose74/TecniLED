@@ -42,10 +42,17 @@ class ProveedorAdmin(admin.ModelAdmin):
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ('sku', 'nombre', 'categoria', 'proveedor', 'precio', 'precio_oferta', 'stock', 'activo')
+    list_display = ('sku', 'nombre', 'categoria', 'proveedor', 'precio', 'precio_oferta', 'stock', 'activo','tiene_texto_alternativo', 'destacado_en_inicio')
     list_filter = ('categoria', 'proveedor', 'activo', 'destacado_en_inicio')
     search_fields = ('sku', 'nombre')
     ordering = ('nombre',)
+    
+    # G1-1021: columna para encontrar productos con foto que aún no tienen texto alternativo
+    @admin.display(description='Texto alternativo', boolean=True)
+    def tiene_texto_alternativo(self, obj):
+        if not obj.imagen:
+            return None  # sin foto no hay nada que describir
+        return bool(obj.texto_alternativo)
 
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):

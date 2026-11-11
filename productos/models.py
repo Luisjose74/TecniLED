@@ -147,7 +147,11 @@ class Producto(models.Model):
             raise ValidationError({
                 'precio_oferta': 'El precio de oferta debe ser menor al precio normal.'
             })
-
+        # G1-1021: regla de G1-1019 en el modelo, para que la cumplan el panel y el Django Admin
+        if self.imagen and not self.texto_alternativo:
+            raise ValidationError({
+                'texto_alternativo': 'Describe la imagen para las personas que usan lectores de pantalla.'
+            })
         
 class MovimientoInventario(models.Model):
     """G1-149: historial de movimientos de stock. Cada entrada de mercancía deja un registro."""

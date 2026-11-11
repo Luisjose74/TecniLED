@@ -165,17 +165,6 @@ class ProductoForm(forms.ModelForm):
         texto = self.cleaned_data.get('texto_alternativo') or ''
         return ' '.join(texto.split())  # quita espacios de sobra
 
-    def clean(self):
-        cleaned_data = super().clean()
-        imagen = cleaned_data.get('imagen')
-        texto = cleaned_data.get('texto_alternativo')
-        if imagen and not texto:
-            self.add_error(
-                'texto_alternativo',
-                'Describe la imagen para las personas que usan lectores de pantalla.',
-            )
-        return cleaned_data
-
 
 class ProveedorForm(forms.ModelForm):
     # Campo extra (no es de la tabla): casillas para vincular varios productos
