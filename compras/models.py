@@ -1,10 +1,22 @@
 from decimal import Decimal
+from pathlib import Path
 
 from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.utils import timezone
 
 from productos.models import Producto, Proveedor
+
+# G1-159: documentos aceptados como remisión o factura del proveedor
+EXTENSIONES_REMISION = ('pdf', 'png', 'jpg', 'jpeg')
+TAMANO_MAXIMO_REMISION = 5 * 1024 * 1024  # 5 MB
+
+
+def validar_tamano_remision(archivo):
+    """Rechaza archivos que superen el tamaño permitido (5 MB)."""
+    if archivo.size > TAMANO_MAXIMO_REMISION:
+        raise ValidationError('El archivo no puede superar los 5 MB.')
 
 
 class OrdenCompra(models.Model):
@@ -22,6 +34,22 @@ class OrdenCompra(models.Model):
         max_length=10, choices=Estado.choices, default=Estado.PENDIENTE,
     )
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    # --- G1-159: soporte documental de la recepción de mercancía ---
+    remision = models.FileField(
+        'Remisión o factura del proveedor',
+        upload_to='remisiones/%Y/%m/',
+        blank=True,
+        null=True,
+        validators=[
+            FileExtensionValidator(
+                EXTENSIONES_REMISION,
+                message='Solo se permiten archivos PDF o imágenes JPG/PNG.',
+            ),
+            validar_tamano_remision,
+        ],
+        help_text='PDF o imagen (JPG, PNG). Tamaño máximo 5 MB.',
+    )
 
     # --- Auditoría ---
     creado_en = models.DateTimeField(auto_now_add=True)
@@ -53,8 +81,24 @@ class OrdenCompra(models.Model):
 
     @property
     def es_editable(self):
-        """Solo las órdenes pendientes se pueden modificar (lo usan otros tickets)."""
+        """Solo las órdenes pendientes se pueden modificar (G1-164)."""
         return self.estado == self.Estado.PENDIENTE
+
+    @property
+    def tiene_remision(self):
+        return bool(self.remision)
+
+    @property
+    def nombre_remision(self):
+        """Nombre original del archivo adjunto (sin la ruta de almacenamiento)."""
+        return Path(self.remision.name).name if self.remision else ''
+
+    @property
+    def remision_es_imagen(self):
+        """True si el soporte adjunto es una imagen que se puede previsualizar."""
+        if not self.remision:
+            return False
+        return Path(self.remision.name).suffix.lower() in ('.png', '.jpg', '.jpeg')
 
 
 class DetalleOrdenCompra(models.Model):
