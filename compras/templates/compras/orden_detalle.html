@@ -146,98 +146,185 @@
 
     {# G1-159: soporte documental de la recepción #}
     <div
-        class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Remisión
-            o factura del proveedor</h3>
+        class="bg-white dark:bg-[#0D192D] rounded-[18px] border border-gray-200 dark:border-[#2A3A55] p-6 shadow-sm dark:shadow-xl dark:shadow-black/20">
 
-        {% if orden.tiene_remision %}
-        <div class="mt-4 flex flex-col sm:flex-row gap-4 sm:items-center">
-            {% if orden.remision_es_imagen %}
-            <a href="{{ orden.remision.url }}" target="_blank"
-                rel="noopener"
-                class="inline-block shrink-0"
-                title="Ver la imagen de la remisión"
-                aria-label="Ver la imagen de la remisión">
-                <img src="{{ orden.remision.url }}"
-                    alt="Vista previa de la remisión {{ orden.nombre_remision }} de la orden {{ orden.numero_factura }}"
-                    class="w-32 h-32 object-cover rounded-xl border border-gray-200 dark:border-gray-700">
-            </a>
-            {% endif %}
-            <div class="flex-1">
-                <p
-                    class="text-sm font-semibold text-gray-900 dark:text-white break-all">{{ orden.nombre_remision }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Última actualización de la orden:
-                    {{ orden.actualizado_en|date:"d/m/Y H:i" }}.
-                </p>
-                <div class="flex flex-wrap gap-2 mt-3">
-                    <a href="{{ orden.remision.url }}" target="_blank"
-                        rel="noopener"
-                        class="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 transition-colors">
-                        <svg aria-hidden="true" class="w-4 h-4" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24"><path
+        <div class="flex items-center gap-3">
+            <svg aria-hidden="true"
+                class="w-6 h-6 shrink-0 text-gray-700 dark:text-white" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" viewBox="0 0 24 24"><path
+                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path
+                    d="M14 2v6h6" /><path d="M8 13h8" /><path d="M8 17h5" /></svg>
+            <h3
+                class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                Remisión o factura del proveedor</h3>
+        </div>
+
+        <div
+            class="mt-5 rounded-2xl bg-gray-50 dark:bg-[#15243C] border border-gray-200 dark:border-[#253850] p-5">
+            {% if orden.tiene_remision %}
+            <div
+                class="flex flex-col lg:flex-row lg:items-center gap-5 lg:justify-between">
+                <div class="flex items-center gap-4 min-w-0">
+                    {# El icono sigue el tipo real del archivo: los JPG/PNG no son PDF #}
+                    {% if orden.remision_es_imagen %}
+                    <div
+                        class="w-14 h-16 shrink-0 rounded-xl bg-sky-50 dark:bg-sky-500/15 border border-sky-200 dark:border-sky-400/40 flex flex-col items-center justify-center gap-0.5">
+                        <svg aria-hidden="true"
+                            class="w-6 h-6 text-sky-600 dark:text-sky-300" fill="none"
+                            stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            viewBox="0 0 24 24"><rect x="3" y="5" width="18"
+                                height="14" rx="2" /><circle cx="8.5" cy="10.5"
+                                r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
+                        <span
+                            class="text-[10px] font-bold tracking-wide text-sky-600 dark:text-sky-300">IMG</span>
+                    </div>
+                    {% else %}
+                    <div
+                        class="w-14 h-16 shrink-0 rounded-xl bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-400/40 flex flex-col items-center justify-center gap-0.5">
+                        <svg aria-hidden="true"
+                            class="w-6 h-6 text-red-600 dark:text-red-400" fill="none"
+                            stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            viewBox="0 0 24 24"><path
+                                d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path
+                                d="M14 2v6h6" /></svg>
+                        <span
+                            class="text-[10px] font-bold tracking-wide text-red-600 dark:text-red-400">PDF</span>
+                    </div>
+                    {% endif %}
+                    <div class="min-w-0">
+                        <p
+                            class="text-base font-bold text-gray-900 dark:text-white break-all">{{ orden.nombre_remision }}</p>
+                        <p
+                            class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 mt-1">
+                            <svg aria-hidden="true" class="w-4 h-4 shrink-0" fill="none"
+                                stroke="currentColor" stroke-width="2"
                                 stroke-linecap="round" stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path
-                                stroke-linecap="round" stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path
+                                    d="M12 7v5l3 2" /></svg>
+                            Última actualización:
+                            {{ orden.actualizado_en|date:"d/m/Y H:i" }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 lg:shrink-0">
+                    {# En claro se usan tonos oscuros del mismo color para mantener la legibilidad #}
+                    <a href="{{ orden.remision.url }}" target="_blank" rel="noopener"
+                        class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl border-2 border-[#0670A3] text-[#0670A3] dark:border-[#079FE8] dark:text-[#079FE8] hover:bg-[#079FE8]/10 text-sm font-bold transition-colors">
+                        <svg aria-hidden="true" class="w-5 h-5" fill="none"
+                            stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            viewBox="0 0 24 24"><path
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /><circle
+                                cx="12" cy="12" r="3" /></svg>
                         Ver documento
                     </a>
                     <a href="{{ orden.remision.url }}" download
-                        class="px-4 py-2 bg-[#F2AE30] hover:bg-[#d99b28] text-black text-sm font-bold rounded-xl flex items-center gap-2 transition-colors">
-                        <svg aria-hidden="true" class="w-4 h-4" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24"><path
-                                stroke-linecap="round" stroke-linejoin="round"
-                                stroke-width="2"
+                        class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl border-2 border-[#996A00] text-[#996A00] dark:border-[#F5AC24] dark:text-[#F5AC24] hover:bg-[#F5AC24]/10 text-sm font-bold transition-colors">
+                        <svg aria-hidden="true" class="w-5 h-5" fill="none"
+                            stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            viewBox="0 0 24 24"><path
                                 d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" /></svg>
                         Descargar
                     </a>
                 </div>
             </div>
-        </div>
-        {% else %}
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            Esta orden todavía no tiene remisión ni factura adjunta.
-        </p>
-        {% endif %}
-
-        <div class="flex flex-wrap gap-2 mt-6">
-            <a href="{% url 'adjuntar_remision' orden.pk %}"
-                class="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 transition-colors shadow-lg shadow-sky-500/20">
-                <svg aria-hidden="true" class="w-4 h-4" fill="none"
-                    stroke="currentColor" viewBox="0 0 24 24"><path
-                        stroke-linecap="round" stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" /></svg>
-                {% if orden.tiene_remision %}Reemplazar remisión{% else %}Adjuntar remisión{% endif %}
-            </a>
-            {% if orden.es_editable %}
-            <form method="post" action="{% url 'recibir_orden' orden.pk %}"
-                data-confirmar="¿Marcar la orden {{ orden.numero_factura }} como recibida? Después sus datos ya no se podrán modificar.">
-                {% csrf_token %}
-                <button type="submit"
-                    class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl flex items-center gap-2 transition-colors shadow-lg shadow-emerald-600/20">
-                    <svg aria-hidden="true" class="w-4 h-4" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24"><path
-                            stroke-linecap="round" stroke-linejoin="round"
-                            stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                    Marcar como recibida
-                </button>
-            </form>
-            <form method="post" action="{% url 'anular_orden' orden.pk %}"
-                data-confirmar="¿Anular la orden {{ orden.numero_factura }}? Esta acción no se puede deshacer desde el panel.">
-                {% csrf_token %}
-                <button type="submit"
-                    class="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl flex items-center gap-2 transition-colors shadow-lg shadow-red-600/20">
-                    <svg aria-hidden="true" class="w-4 h-4" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24"><path
-                            stroke-linecap="round" stroke-linejoin="round"
-                            stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    Anular orden
-                </button>
-            </form>
+            {% else %}
+            <p class="text-sm text-gray-500 dark:text-gray-300">
+                Esta orden todavía no tiene remisión ni factura adjunta.
+            </p>
             {% endif %}
+        </div>
+
+        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-white/10">
+            <div class="flex items-start gap-3">
+                <svg aria-hidden="true"
+                    class="w-5 h-5 shrink-0 text-gray-700 dark:text-white mt-0.5"
+                    fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    viewBox="0 0 24 24"><path
+                        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle
+                        cx="12" cy="12" r="3" /></svg>
+                <div>
+                    <h4 class="text-lg font-bold text-gray-900 dark:text-white">Acciones
+                        de la orden</h4>
+                    <p class="text-sm text-gray-500 dark:text-gray-300">Gestiona el
+                        estado y los adjuntos de esta orden.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-5">
+                <a href="{% url 'adjuntar_remision' orden.pk %}"
+                    class="flex items-center gap-4 min-h-[105px] px-5 py-4 rounded-2xl border-2 border-[#0670A3] text-[#0670A3] dark:border-[#079FE8] dark:text-[#079FE8] hover:bg-[#079FE8]/10 transition-colors">
+                    <span
+                        class="shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-[#079FE8]/10">
+                        <svg aria-hidden="true" class="w-7 h-7" fill="none"
+                            stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            viewBox="0 0 24 24"><path
+                                d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" /></svg>
+                    </span>
+                    <span class="min-w-0">
+                        <span
+                            class="block text-base font-bold leading-tight">{% if orden.tiene_remision %}Reemplazar remisión{% else %}Adjuntar remisión{% endif %}</span>
+                        <span
+                            class="block text-sm text-gray-500 dark:text-white/70 mt-1 leading-tight">Sube
+                            un nuevo archivo</span>
+                    </span>
+                </a>
+
+                {% if orden.es_editable %}
+                <form method="post" action="{% url 'recibir_orden' orden.pk %}"
+                    data-confirmar="¿Marcar la orden {{ orden.numero_factura }} como recibida? Después sus datos ya no se podrán modificar."
+                    class="flex">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="w-full flex items-center gap-4 min-h-[105px] px-5 py-4 rounded-2xl border-2 border-[#047857] text-[#047857] dark:border-[#08B968] dark:text-[#08B968] hover:bg-[#08B968]/10 transition-colors text-left">
+                        <span
+                            class="shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-[#08B968]/10">
+                            <svg aria-hidden="true" class="w-7 h-7" fill="none"
+                                stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round"
+                                viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" /></svg>
+                        </span>
+                        <span class="min-w-0">
+                            <span
+                                class="block text-base font-bold leading-tight">Marcar como recibida</span>
+                            <span
+                                class="block text-sm text-gray-500 dark:text-white/70 mt-1 leading-tight">Confirma
+                                la recepción</span>
+                        </span>
+                    </button>
+                </form>
+                <form method="post" action="{% url 'anular_orden' orden.pk %}"
+                    data-confirmar="¿Anular la orden {{ orden.numero_factura }}? Esta acción no se puede deshacer desde el panel."
+                    class="flex">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="w-full flex items-center gap-4 min-h-[105px] px-5 py-4 rounded-2xl border-2 border-[#C81E2A] text-[#C81E2A] dark:border-[#E91E2B] dark:text-[#E91E2B] hover:bg-[#E91E2B]/10 transition-colors text-left">
+                        <span
+                            class="shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-[#E91E2B]/10">
+                            <svg aria-hidden="true" class="w-7 h-7" fill="none"
+                                stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round"
+                                viewBox="0 0 24 24"><path
+                                    d="M6 18L18 6M6 6l12 12" /></svg>
+                        </span>
+                        <span class="min-w-0">
+                            <span
+                                class="block text-base font-bold leading-tight">Anular orden</span>
+                            <span
+                                class="block text-sm text-gray-500 dark:text-white/70 mt-1 leading-tight">Cancela
+                                esta orden</span>
+                        </span>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>

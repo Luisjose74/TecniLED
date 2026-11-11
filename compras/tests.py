@@ -249,6 +249,15 @@ class DetalleOrdenTests(BaseComprasTests):
         resp = self.client.get(reverse('orden_detalle', args=[999999]))
         self.assertEqual(resp.status_code, 404)
 
+    def test_tarjeta_de_remision_respeta_el_tema(self):
+        """La tarjeta no debe quedar oscura en modo claro: usa clases con dark:."""
+        resp = self.client.get(reverse('orden_detalle', args=[self.orden.pk]))
+        self.assertContains(resp, 'dark:bg-[#0D192D]')
+        self.assertContains(resp, 'dark:bg-[#15243C]')
+        self.assertNotContains(resp, 'class="bg-[#0D192D]')
+        self.assertNotContains(resp, 'class="bg-[#15243C]')
+        self.assertNotContains(resp, 'text-white">Anular')
+
     def test_detalle_requiere_permiso_de_compras(self):
         self.client.force_login(self.cliente)
         resp = self.client.get(reverse('orden_detalle', args=[self.orden.pk]))
@@ -541,8 +550,10 @@ class RemisionTests(BaseComprasTests):
         self.orden.refresh_from_db()
         self.assertTrue(self.orden.remision_es_imagen)
         detalle = self.client.get(reverse('orden_detalle', args=[self.orden.pk]))
-        self.assertContains(detalle, '<img')
-        self.assertContains(detalle, 'Vista previa de la remisión')
+        # La tarjeta muestra el tipo de archivo y deja abrir/descargar la imagen
+        self.assertContains(detalle, 'Ver documento')
+        self.assertContains(detalle, self.orden.remision.url)
+        self.assertContains(detalle, 'IMG')
 
     def test_rechaza_un_pdf_falso(self):
         falso = SimpleUploadedFile(
