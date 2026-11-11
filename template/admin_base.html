@@ -93,8 +93,8 @@
         <svg aria-hidden="true" class="w-5 h-5 {% if nombre == 'proveedores_lista' or nombre == 'crear_proveedor' %}text-black{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
         Proveedores
       </a>
-      <a href="{% url 'ordenes_lista' %}" {% if nombre == 'ordenes_lista' or nombre == 'crear_orden' %}aria-current="page"{% endif %} class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all {% if nombre == 'ordenes_lista' or nombre == 'crear_orden' %}bg-[#F2AE30] text-black shadow-md shadow-[#F2AE30]/20{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50{% endif %}">
-        <svg aria-hidden="true" class="w-5 h-5 {% if nombre == 'ordenes_lista' or nombre == 'crear_orden' %}text-black{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+      <a href="{% url 'ordenes_lista' %}" {% if nombre == 'ordenes_lista' or nombre == 'crear_orden' or nombre == 'orden_detalle' or nombre == 'editar_orden' or nombre == 'adjuntar_remision' %}aria-current="page"{% endif %} class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all {% if nombre == 'ordenes_lista' or nombre == 'crear_orden' or nombre == 'orden_detalle' or nombre == 'editar_orden' or nombre == 'adjuntar_remision' %}bg-[#F2AE30] text-black shadow-md shadow-[#F2AE30]/20{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50{% endif %}">
+        <svg aria-hidden="true" class="w-5 h-5 {% if nombre == 'ordenes_lista' or nombre == 'crear_orden' or nombre == 'orden_detalle' or nombre == 'editar_orden' or nombre == 'adjuntar_remision' %}text-black{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
         Compras a proveedores
       </a>
       {% endif %}
@@ -246,5 +246,6 @@
 {% include 'partials/modal_confirmacion.html' %}
 <script src="{% static 'js/main.js' %}"></script>
 <script src="{% static 'js/confirmar.js' %}"></script>
+<script src="{% static 'js/calendario.js' %}"></script>
 </body>
 </html>

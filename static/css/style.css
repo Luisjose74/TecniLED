@@ -206,6 +206,64 @@ summary:focus-visible,
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.15);
 }
 
+/* ---------- Campos de fecha y botón de calendario ----------
+   Los input[type="date"] nativos pintan su icono según color-scheme.
+   Sin esto, en modo oscuro el icono queda negro sobre un fondo oscuro
+   y parece que el campo no tiene selector de calendario. */
+input[type="date"] {
+  color-scheme: light dark;
+}
+html.light input[type="date"] {
+  color-scheme: light;
+}
+html.dark input[type="date"] {
+  color-scheme: dark;
+}
+
+/* El botón lo agrega static/js/calendario.js alrededor del campo.
+   Si el JavaScript no carga, el icono nativo del navegador sigue visible. */
+.campo-fecha {
+  position: relative;
+}
+.campo-fecha > input[type="date"] {
+  padding-right: 2.75rem;
+}
+.campo-fecha > input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+.boton-calendario {
+  position: absolute;
+  top: 50%;
+  right: 0.4rem;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+.boton-calendario:hover {
+  background: rgb(242 174 48 / 0.18);
+  color: #b57a0e;
+}
+html.dark .boton-calendario {
+  color: #9ca3af;
+}
+html.dark .boton-calendario:hover {
+  color: #f2ae30;
+}
+.boton-calendario svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
 /* ---------- Personas que prefieren menos movimiento ---------- */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
