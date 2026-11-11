@@ -21,7 +21,7 @@
       <!-- ========== COLUMNA IZQUIERDA: IMAGEN ========== -->
       <div class="bg-gray-100 dark:bg-gray-800 aspect-square lg:aspect-auto">
         {% if producto.imagen %}
-          <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="w-full h-full object-cover">
+          <img src="{{ producto.imagen.url }}" alt="{{ producto.alt_imagen }}" class="w-full h-full object-cover">
         {% else %}
           <!-- Si el producto no tiene imagen se muestra un ícono de bombillo -->
           <div class="w-full h-full min-h-[300px] flex items-center justify-center text-gray-400">
@@ -102,7 +102,7 @@
                 <a href="{% url 'producto_detalle' item.id %}" class="rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 hover:border-[#F2AE30] transition-colors">
                   <div class="aspect-video bg-gray-200 dark:bg-gray-700">
                     {% if item.imagen %}
-                      <img src="{{ item.imagen.url }}" alt="{{ item.nombre }}" class="w-full h-full object-cover">
+                      <img src="{{ item.imagen.url }}" alt="{{ item.alt_imagen }}" class="w-full h-full object-cover">
                     {% endif %}
                   </div>
                   <div class="p-3">

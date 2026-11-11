@@ -80,6 +80,13 @@
         {{ form.imagen }}
       </div>
       {% for error in form.imagen.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+      {# G1-1020: texto que leen los lectores de pantalla en lugar de la imagen #}
+      <div class="mt-4">
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2" for="{{ form.texto_alternativo.id_for_label }}">Texto alternativo de la imagen</label>
+        {{ form.texto_alternativo }}
+        <p id="ayuda-texto-alternativo" class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ form.texto_alternativo.help_text }} Es obligatorio si el producto tiene imagen.</p>
+        {% for error in form.texto_alternativo.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+      </div>
     </div>
 
     <div>

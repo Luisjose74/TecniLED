@@ -57,7 +57,7 @@
         <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors{% if not p.activo %} bg-gray-50 dark:bg-gray-800/40{% endif %}">
           <td class="p-4 flex items-center gap-4{% if not p.activo %} opacity-60{% endif %}">
             {% if p.imagen %}
-            <img src="{{ p.imagen.url }}" alt="{{ p.nombre }}" class="w-12 h-12 rounded-lg object-cover bg-gray-100 dark:bg-gray-900 shrink-0">
+            <img src="{{ p.imagen.url }}" alt="{{ p.alt_imagen }}" class="w-12 h-12 rounded-lg object-cover bg-gray-100 dark:bg-gray-900 shrink-0">
             {% else %}
             <div class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-900 shrink-0"></div>
             {% endif %}

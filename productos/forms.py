@@ -102,6 +102,8 @@ class ProductoForm(forms.ModelForm):
         self.fields['imagen'].widget.attrs['class'] = 'hidden'
         self.fields['imagen'].widget.attrs['id'] = 'id_imagen'
         self.fields['imagen'].required = False
+        # G1-1020: el lector de pantalla lee también la ayuda que está debajo del campo
+        self.fields['texto_alternativo'].widget.attrs['aria-describedby'] = 'ayuda-texto-alternativo'
         # Selector de proveedor (como en el Figma)
         self.fields['proveedor'].empty_label = 'Sin proveedor'
                 # Proveedores activos + el que ya tiene este producto (si se inactivó después),
