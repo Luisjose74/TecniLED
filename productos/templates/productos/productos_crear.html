@@ -63,6 +63,22 @@
       <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Registra proveedores en la pestaña Proveedores para vincularlos.</p>
     </div>
 
+    {# G1-155 / G1-157: ubicación en bodega y mínimo para las alertas de stock #}
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2" for="id_stock_minimo">Stock mínimo</label>
+        {{ form.stock_minimo }}
+        {% for error in form.stock_minimo.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Se avisa cuando las existencias bajen de este valor. Usa 0 para no alertar.</p>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2" for="id_ubicacion">Ubicación</label>
+        {{ form.ubicacion }}
+        {% for error in form.ubicacion.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ej: Estante A-3, bodega principal.</p>
+      </div>
+    </div>
+
     <div>
       <p class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Imagen</p>
       <div class="space-y-4">

@@ -69,6 +69,12 @@
         Gestión de productos
       </a>
 
+      {# G1-155: inventario actual con filtros y exportación #}
+      <a href="{% url 'inventario_lista' %}" {% if nombre == 'inventario_lista' %}aria-current="page"{% endif %} class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all {% if nombre == 'inventario_lista' %}bg-[#F2AE30] text-black shadow-md shadow-[#F2AE30]/20{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50{% endif %}">
+        <svg aria-hidden="true" class="w-5 h-5 {% if nombre == 'inventario_lista' %}text-black{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15h3v3H7z"/><path d="M12 10h3v8h-3z"/><path d="M17 6h3v12h-3z"/></svg>
+        Inventario actual
+      </a>
+
       
       <a href="{% url 'categorias_lista' %}" {% if nombre == 'categorias_lista' %}aria-current="page"{% endif %} class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all {% if nombre == 'categorias_lista' %}bg-[#F2AE30] text-black shadow-md shadow-[#F2AE30]/20{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50{% endif %}">
         <svg aria-hidden="true" class="w-5 h-5 {% if nombre == 'categorias_lista' %}text-black{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>
@@ -80,8 +86,8 @@
         Entradas de inventario
       </a>
 
-      <a href="{% url 'salidas_lista' %}" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all {% if nombre == 'salidas_lista' %}bg-[#F2AE30] text-black shadow-md shadow-[#F2AE30]/20{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50{% endif %}">
-        <svg class="w-5 h-5 {% if nombre == 'salidas_lista' %}text-black{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+      <a href="{% url 'salidas_lista' %}" {% if nombre == 'salidas_lista' %}aria-current="page"{% endif %} class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all {% if nombre == 'salidas_lista' %}bg-[#F2AE30] text-black shadow-md shadow-[#F2AE30]/20{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50{% endif %}">
+        <svg aria-hidden="true" class="w-5 h-5 {% if nombre == 'salidas_lista' %}text-black{% else %}text-gray-400 dark:text-gray-500{% endif %}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
         Salidas de inventario
       </a>
       
