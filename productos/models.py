@@ -77,6 +77,17 @@ class Producto(models.Model):
         'Precio de Oferta', max_digits=10, decimal_places=2, null=True, blank=True
     )
     stock = models.PositiveIntegerField('Stock Disponible', default=0)
+    # G1-157: mínimo configurable por producto. 0 significa "sin alerta".
+    stock_minimo = models.PositiveIntegerField(
+        'Stock mínimo', default=0,
+        help_text='Cuando las existencias bajen de este valor se genera una alerta. Usa 0 para desactivarla.',
+    )
+
+    # --- Ubicación en bodega (G1-155) ---
+    ubicacion = models.CharField(
+        'Ubicación', max_length=100, blank=True,
+        help_text='Ej: Estante A-3, bodega principal.',
+    )
 
     # --- Imagen ---
     imagen = models.ImageField('Imagen', upload_to='productos/', blank=True, null=True)
@@ -108,6 +119,16 @@ class Producto(models.Model):
     def get_categoria_display(self):
         """Compatibilidad: inicio.html, producto_detalle.html y la lista siguen usando este nombre."""
         return self.categoria.nombre
+
+    @property
+    def stock_bajo(self):
+        """G1-157: True solo si hay un mínimo configurado y el stock está por debajo."""
+        return self.stock_minimo > 0 and self.stock < self.stock_minimo
+
+    @property
+    def valor_inventario(self):
+        """G1-155: cantidad por valor unitario, para el listado de inventario."""
+        return self.stock * self.precio
 
     def porcentaje_descuento(self):
         """Devuelve el % de descuento (ej: 23) o 0 si no tiene oferta."""
@@ -205,9 +226,47 @@ class MovimientoInventario(models.Model):
                 raise ValueError(
                     f'Stock insuficiente: solo hay {producto.stock} unidades disponibles de "{producto.nombre}".'
                 )
+            stock_anterior = producto.stock
             producto.stock -= cantidad
             producto.save(update_fields=['stock', 'actualizado_en'])
-            return cls.objects.create(
+            movimiento = cls.objects.create(
                 producto=producto, tipo=cls.Tipo.SALIDA, motivo=motivo, cantidad=cantidad,
                 stock_resultante=producto.stock, usuario=usuario, observacion=observacion,
             )
+            # G1-157: alerta solo al cruzar el mínimo. Si el mínimo es 0 no hay alerta;
+            # el movimiento queda registrado para que el administrador lo revise.
+            if (
+                producto.stock_minimo > 0
+                and stock_anterior >= producto.stock_minimo
+                and producto.stock < producto.stock_minimo
+            ):
+                _notificar_stock_bajo(producto)
+            return movimiento
+
+
+def _notificar_stock_bajo(producto):
+    """G1-157: avisa a quienes gestionan inventario que un producto cruzó su mínimo."""
+    from django.contrib.auth import get_user_model
+    from django.db.models import Q
+
+    from notificaciones.models import Notificacion
+    from notificaciones.services import crear_notificacion
+
+    Usuario = get_user_model()
+    destinatarios = Usuario.objects.filter(
+        Q(is_superuser=True)
+        | Q(rol__in=[Usuario.Rol.ADMINISTRADOR, Usuario.Rol.CONTROL_INVENTARIO]),
+        estado_cuenta=Usuario.EstadoCuenta.ACTIVA,
+    ).distinct()
+
+    mensaje = (
+        f'Stock bajo de "{producto.nombre}" (SKU {producto.sku}): '
+        f'quedan {producto.stock} unidades y el mínimo configurado es {producto.stock_minimo}.'
+    )
+    for usuario in destinatarios:
+        crear_notificacion(
+            destinatario=usuario,
+            tipo=Notificacion.Tipo.GENERAL,
+            canal=Notificacion.Canal.INTERNA,
+            mensaje=mensaje,
+        )

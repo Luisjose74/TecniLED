@@ -1,0 +1,205 @@
+{% extends 'admin_base.html' %}
+{% block title %}Inventario actual - TECNILED{% endblock %}
+{% block titulo_seccion %}Inventario actual{% endblock %}
+{% block migas_actual %}Inventario actual{% endblock %}
+{% block content %}
+
+{# G1-157: aviso general cuando hay productos por debajo del mínimo configurado #}
+{% if hay_stock_bajo %}
+<div role="status" class="mb-6 flex items-start gap-3 p-4 rounded-2xl border border-amber-300 dark:border-amber-500/40 bg-amber-100 dark:bg-amber-500/15">
+  <svg aria-hidden="true" class="w-5 h-5 text-amber-700 dark:text-amber-300 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+  <div>
+    <p class="font-semibold text-amber-900 dark:text-amber-200">Hay productos con stock bajo</p>
+    <p class="text-sm text-amber-800 dark:text-amber-300">Revisa las existencias marcadas en la tabla y registra una entrada de inventario.</p>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+    <p class="text-sm text-gray-500 dark:text-gray-400">Productos</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ totales.total_productos }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+    <p class="text-sm text-gray-500 dark:text-gray-400">Unidades en inventario</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ totales.total_unidades }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+    <p class="text-sm text-gray-500 dark:text-gray-400">Valor del inventario</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ totales.total_valor|floatformat:2 }}</p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+    <p class="text-sm text-gray-500 dark:text-gray-400">Con stock bajo / agotados</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">
+      <span class="text-amber-600">{{ totales.total_bajo_stock }}</span>
+      <span class="text-gray-400 dark:text-gray-500 font-normal">/</span>
+      <span class="text-red-600">{{ totales.total_agotados }}</span>
+    </p>
+  </div>
+</div>
+
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+
+  {# G1-156: filtros combinables del inventario #}
+  <form method="get" class="p-6 border-b border-gray-100 dark:border-gray-700">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="relative lg:col-span-2">
+        <svg aria-hidden="true" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+        <input
+          type="text"
+          name="q"
+          value="{{ filtros.q }}"
+          placeholder="Buscar por producto, código o ubicación..."
+          aria-label="Buscar en el inventario"
+          class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-[#F2AE30] outline-none transition-shadow text-gray-900 dark:text-white"
+        >
+      </div>
+      <div>
+        <label for="filtro-categoria" class="sr-only">Categoría</label>
+        <select id="filtro-categoria" name="categoria" class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-[#F2AE30] outline-none text-gray-900 dark:text-white">
+          <option value="">Todas las categorías</option>
+          {% for c in categorias %}
+          <option value="{{ c.pk }}" {% if c.pk|stringformat:"s" == filtros.categoria %}selected{% endif %}>{{ c.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="filtro-proveedor" class="sr-only">Proveedor</label>
+        <select id="filtro-proveedor" name="proveedor" class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-[#F2AE30] outline-none text-gray-900 dark:text-white">
+          <option value="">Todos los proveedores</option>
+          {% for p in proveedores %}
+          <option value="{{ p.pk }}" {% if p.pk|stringformat:"s" == filtros.proveedor %}selected{% endif %}>{{ p.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="filtro-estado" class="sr-only">Estado del producto</label>
+        <select id="filtro-estado" name="estado" class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-[#F2AE30] outline-none text-gray-900 dark:text-white">
+          <option value="">Todos los estados</option>
+          <option value="activos" {% if filtros.estado == 'activos' %}selected{% endif %}>Solo activos</option>
+          <option value="inactivos" {% if filtros.estado == 'inactivos' %}selected{% endif %}>Solo inactivos</option>
+        </select>
+      </div>
+      <div>
+        <label for="filtro-existencia" class="sr-only">Existencias</label>
+        <select id="filtro-existencia" name="existencia" class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-[#F2AE30] outline-none text-gray-900 dark:text-white">
+          <option value="">Cualquier existencia</option>
+          <option value="disponibles" {% if filtros.existencia == 'disponibles' %}selected{% endif %}>Con existencias</option>
+          <option value="bajo" {% if filtros.existencia == 'bajo' %}selected{% endif %}>Stock bajo</option>
+          <option value="agotados" {% if filtros.existencia == 'agotados' %}selected{% endif %}>Agotados</option>
+        </select>
+      </div>
+      <div>
+        <label for="filtro-precio-min" class="sr-only">Precio mínimo</label>
+        <input
+          id="filtro-precio-min" type="number" name="precio_min" min="0" step="0.01"
+          value="{{ filtros.precio_min }}" placeholder="Precio mínimo"
+          class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-[#F2AE30] outline-none text-gray-900 dark:text-white"
+        >
+      </div>
+      <div>
+        <label for="filtro-precio-max" class="sr-only">Precio máximo</label>
+        <input
+          id="filtro-precio-max" type="number" name="precio_max" min="0" step="0.01"
+          value="{{ filtros.precio_max }}" placeholder="Precio máximo"
+          class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-[#F2AE30] outline-none text-gray-900 dark:text-white"
+        >
+      </div>
+    </div>
+
+    <div class="mt-4 flex flex-col sm:flex-row gap-3 justify-end">
+      <a href="{% url 'inventario_lista' %}" class="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-semibold text-sm text-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        Limpiar filtros
+      </a>
+      <button type="submit" class="px-5 py-2.5 rounded-xl bg-gray-900 dark:bg-gray-700 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors">
+        <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/></svg>
+        Filtrar
+      </button>
+      {# G1-155: exporta exactamente lo que está filtrado #}
+      <a href="{% url 'inventario_exportar' %}?{{ request.GET.urlencode }}" class="px-5 py-2.5 rounded-xl bg-[#F2AE30] text-black font-bold text-sm flex items-center justify-center gap-2 hover:brightness-95 transition-all shadow-lg shadow-[#F2AE30]/20">
+        <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Exportar a Excel
+      </a>
+    </div>
+  </form>
+
+  <div tabindex="0" role="region" aria-label="Tabla de inventario actual" class="overflow-x-auto">
+    <table class="w-full text-left border-collapse min-w-[900px]">
+      <caption class="sr-only">Inventario actual de productos</caption>
+      <thead>
+        <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm border-b border-gray-100 dark:border-gray-700">
+          <th scope="col" class="p-4 font-semibold">Producto</th>
+          <th scope="col" class="p-4 font-semibold">Categoría</th>
+          <th scope="col" class="p-4 font-semibold">Proveedor</th>
+          <th scope="col" class="p-4 font-semibold">Ubicación</th>
+          <th scope="col" class="p-4 font-semibold text-right">Existencias</th>
+          <th scope="col" class="p-4 font-semibold text-right">Mínimo</th>
+          <th scope="col" class="p-4 font-semibold text-right">Valor unitario</th>
+          <th scope="col" class="p-4 font-semibold text-right">Valor total</th>
+          <th scope="col" class="p-4 font-semibold">Estado</th>
+          <th scope="col" class="p-4 font-semibold text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for p in productos %}
+        <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors{% if p.stock_bajo %} bg-amber-100/70 dark:bg-amber-500/10{% elif p.stock == 0 %} bg-red-100/70 dark:bg-red-500/10{% endif %}">
+          <td class="p-4">
+            <p class="font-semibold text-gray-900 dark:text-white line-clamp-1">{{ p.nombre }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">SKU: {{ p.sku }}</p>
+          </td>
+          <td class="p-4 text-sm text-gray-600 dark:text-gray-300">{{ p.get_categoria_display }}</td>
+          <td class="p-4 text-sm text-gray-600 dark:text-gray-300">{{ p.proveedor.nombre|default:"Sin proveedor" }}</td>
+          <td class="p-4 text-sm text-gray-600 dark:text-gray-300">{{ p.ubicacion|default:"Sin ubicación" }}</td>
+          <td class="p-4 text-right">
+            <span class="font-semibold {% if p.stock_bajo %}text-amber-600{% elif p.stock > 0 %}text-emerald-500{% else %}text-red-600{% endif %}">{{ p.stock }}</span>
+            {# G1-157: alerta por producto #}
+            {% if p.stock_bajo %}
+            <span class="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-200 text-amber-900 border border-amber-300 dark:bg-amber-500/30 dark:text-amber-100 dark:border-amber-500/40">
+              <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+              Stock bajo
+            </span>
+            {% elif p.stock == 0 %}
+            <span class="ml-1 inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-red-400 text-red-950 dark:bg-red-500/60 dark:text-red-50">Agotado</span>
+            {% endif %}
+          </td>
+          <td class="p-4 text-right text-sm text-gray-600 dark:text-gray-300">{{ p.stock_minimo }}</td>
+          <td class="p-4 text-right text-sm text-gray-900 dark:text-white">${{ p.precio|floatformat:2 }}</td>
+          <td class="p-4 text-right text-sm font-semibold text-gray-900 dark:text-white">${{ p.valor_total|floatformat:2 }}</td>
+          <td class="p-4">
+            <span class="inline-flex px-2 py-1 rounded-full text-xs font-medium {% if p.activo %}bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400{% else %}bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400{% endif %}">
+              {% if p.activo %}Activo{% else %}Inactivo{% endif %}
+            </span>
+          </td>
+          <td class="p-4">
+            <div class="flex items-center justify-end">
+              {% if p.activo %}
+              <a href="{% url 'editar_producto' p.pk %}" title="Editar producto" aria-label="Editar producto" class="p-2 text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-500/10 rounded-lg transition-colors inline-flex items-center justify-center">
+                <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="10" class="p-8 text-center text-gray-500">No se encontraron productos con esos filtros.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if productos.has_other_pages %}
+  <div role="navigation" aria-label="Paginación del inventario" class="p-4 flex justify-center gap-2 border-t border-gray-100 dark:border-gray-700">
+    {% if productos.has_previous %}
+      <a href="{% querystring page=productos.previous_page_number %}" class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Anterior</a>
+    {% endif %}
+    <span aria-current="page" class="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">Página {{ productos.number }} de {{ productos.paginator.num_pages }}</span>
+    {% if productos.has_next %}
+      <a href="{% querystring page=productos.next_page_number %}" class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Siguiente</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
