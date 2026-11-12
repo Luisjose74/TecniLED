@@ -16,6 +16,7 @@ from django.utils import timezone
 from productos.forms import ProductoForm
 
 from productos.models import Categoria, MovimientoInventario, Producto
+from notificaciones.models import Notificacion
 
 # Las imágenes de los tests se guardan aquí y se borran al terminar
 MEDIA_TEMPORAL = tempfile.mkdtemp()
@@ -895,3 +896,279 @@ class SalidaInventarioTests(TestCase):
         self.assertContains(self.client.get(reverse('salidas_lista')), 'Página 1 de 2')
         self.assertContains(self.client.get(reverse('salidas_lista'), {'q': 'S1'}), 'Reflector')
         self.assertNotContains(self.client.get(reverse('salidas_lista'), {'q': 'zzz'}), 'Reflector</p>')
+
+
+# ---------------------------------------------------------------------------
+# G1-153: inventario - asociación de proveedores
+# ---------------------------------------------------------------------------
+def datos_producto(proveedor=None, **overrides):
+    datos = {
+        'sku': 'A1', 'nombre': 'Panel LED', 'categoria': categoria('Eléctricos').pk,
+        'precio': '80.00', 'precio_oferta': '', 'stock': '20',
+        'descripcion': 'Panel cuadrado.', 'instalacion': 'Fijar al techo.',
+    }
+    if proveedor is not None:
+        datos['proveedor'] = proveedor.pk
+    datos.update(overrides)
+    return datos
+
+
+class AsociacionProveedorTests(TestCase):
+    """G1-153: asociar productos con proveedores sin perder el vínculo al inactivarlos."""
+
+    def setUp(self):
+        self.client.force_login(crear_usuario('asoc_prov@t.com', Usuario.Rol.ADMINISTRADOR))
+        self.proveedor = crear_proveedor_bd()
+
+    def test_crear_producto_con_proveedor_guarda_el_vinculo(self):
+        resp = self.client.post(reverse('crear_producto'), datos_producto(self.proveedor))
+        self.assertRedirects(resp, reverse('productos_lista'))
+        self.assertEqual(Producto.objects.get(sku='A1').proveedor, self.proveedor)
+
+    def test_crear_producto_sin_proveedor_es_valido(self):
+        resp = self.client.post(reverse('crear_producto'), datos_producto())
+        self.assertRedirects(resp, reverse('productos_lista'))
+        self.assertIsNone(Producto.objects.get(sku='A1').proveedor)
+
+    def test_proveedor_inactivo_no_se_ofrece_para_productos_nuevos(self):
+        self.proveedor.inactivar('Incumplió las entregas')
+        self.assertNotIn(self.proveedor, ProductoForm().fields['proveedor'].queryset)
+
+    def test_editar_producto_conserva_el_proveedor_inactivo(self):
+        self.proveedor.inactivar('Incumplió las entregas')
+        producto = crear_producto_bd(sku='A2', nombre='Lámpara', proveedor=self.proveedor)
+        # El proveedor inactivo sigue disponible al editar ese producto
+        self.assertIn(self.proveedor, ProductoForm(instance=producto).fields['proveedor'].queryset)
+        resp = self.client.post(
+            reverse('editar_producto', args=[producto.pk]),
+            datos_producto(self.proveedor, sku='A2', nombre='Lámpara'),
+        )
+        self.assertRedirects(resp, reverse('productos_lista'))
+        producto.refresh_from_db()
+        self.assertEqual(producto.proveedor, self.proveedor)
+
+    def test_inactivar_proveedor_no_borra_el_vinculo_del_producto(self):
+        producto = crear_producto_bd(sku='A3', nombre='Reflector', proveedor=self.proveedor)
+        self.client.post(
+            reverse('inactivar_proveedor', args=[self.proveedor.pk]),
+            {'motivo': 'Incumplió las entregas'},
+        )
+        producto.refresh_from_db()
+        self.proveedor.refresh_from_db()
+        self.assertEqual(producto.proveedor, self.proveedor)
+        self.assertFalse(self.proveedor.activo)
+
+
+# ---------------------------------------------------------------------------
+# G1-155: inventario actual
+# ---------------------------------------------------------------------------
+class InventarioListaTests(TestCase):
+    """G1-155: listar el inventario actual y exportarlo a Excel."""
+
+    def setUp(self):
+        self.client.force_login(crear_usuario('inv_lista@t.com', Usuario.Rol.ADMINISTRADOR))
+        self.proveedor = crear_proveedor_bd()
+        self.p = crear_producto_bd(
+            sku='INV1', nombre='Cable encauchetado', precio='45.00', stock=10,
+            stock_minimo=3, ubicacion='Estante A-3', proveedor=self.proveedor,
+        )
+        crear_producto_bd(sku='INV2', nombre='Foco agotado', precio='10.00', stock=0)
+
+    def test_muestra_los_datos_del_inventario(self):
+        resp = self.client.get(reverse('inventario_lista'))
+        self.assertContains(resp, 'Inventario actual')
+        self.assertContains(resp, 'Cable encauchetado')
+        self.assertContains(resp, 'INV1')
+        self.assertContains(resp, 'Estante A-3')
+        self.assertContains(resp, 'Sin ubicación')
+
+    def test_calcula_los_totales_del_inventario(self):
+        totales = self.client.get(reverse('inventario_lista')).context['totales']
+        self.assertEqual(totales['total_productos'], 2)
+        self.assertEqual(totales['total_unidades'], 10)
+        self.assertEqual(totales['total_valor'], 450)
+        self.assertEqual(totales['total_agotados'], 1)
+
+    def test_paginacion_de_diez_productos(self):
+        for i in range(12):
+            crear_producto_bd(sku=f'PG{i}', nombre=f'Producto {i}')
+        resp = self.client.get(reverse('inventario_lista'))
+        self.assertEqual(len(resp.context['productos']), 10)
+        self.assertContains(resp, 'Página 1 de 2')
+
+    def test_exportacion_descarga_un_xlsx_con_los_datos(self):
+        resp = self.client.get(reverse('inventario_exportar'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(
+            resp['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        self.assertIn('attachment; filename="inventario_', resp['Content-Disposition'])
+
+        from openpyxl import load_workbook
+        libro = load_workbook(BytesIO(resp.content))
+        hoja = libro.active
+        self.assertEqual(hoja.title, 'Inventario')
+        self.assertEqual(hoja['A1'].value, 'Código (SKU)')
+        self.assertEqual(hoja.max_row, 3)  # encabezado + 2 productos
+        filas = {hoja.cell(row=f, column=1).value: f for f in range(2, hoja.max_row + 1)}
+        fila = filas['INV1']
+        self.assertEqual(hoja.cell(row=fila, column=5).value, 'Estante A-3')
+        self.assertEqual(hoja.cell(row=fila, column=6).value, 10)
+        self.assertEqual(hoja.cell(row=fila, column=9).value, 450)
+
+    def test_exportacion_respeta_los_filtros(self):
+        from openpyxl import load_workbook
+        resp = self.client.get(reverse('inventario_exportar'), {'q': 'INV2'})
+        hoja = load_workbook(BytesIO(resp.content)).active
+        self.assertEqual(hoja.max_row, 2)
+        self.assertEqual(hoja.cell(row=2, column=2).value, 'Foco agotado')
+
+    def test_permisos_del_inventario(self):
+        self.client.force_login(crear_usuario('inv_ok@t.com', Usuario.Rol.CONTROL_INVENTARIO))
+        self.assertEqual(self.client.get(reverse('inventario_lista')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('inventario_exportar')).status_code, 200)
+        self.client.force_login(crear_usuario('cli_inv@t.com', Usuario.Rol.CLIENTE))
+        self.assertEqual(self.client.get(reverse('inventario_lista')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('inventario_exportar')).status_code, 403)
+
+    def test_usuario_sin_sesion_es_redirigido_al_login(self):
+        self.client.logout()
+        self.assertEqual(self.client.get(reverse('inventario_lista')).status_code, 302)
+
+
+# ---------------------------------------------------------------------------
+# G1-156: búsquedas avanzadas y filtros
+# ---------------------------------------------------------------------------
+class InventarioFiltrosTests(TestCase):
+    """G1-156: filtros combinables del inventario actual."""
+
+    def setUp(self):
+        self.client.force_login(crear_usuario('inv_filtros@t.com', Usuario.Rol.ADMINISTRADOR))
+        self.proveedor = crear_proveedor_bd()
+        self.cable = crear_producto_bd(
+            sku='F1', nombre='Cable THW', categoria=categoria('Eléctricos'),
+            precio='45.00', stock=10, stock_minimo=2,
+            ubicacion='Estante A-3', proveedor=self.proveedor,
+        )
+        self.lampara = crear_producto_bd(
+            sku='F2', nombre='Lámpara colgante', categoria=categoria('Interiores'),
+            precio='120.00', stock=0, ubicacion='Bodega 2',
+        )
+
+    def nombres(self, **filtros):
+        resp = self.client.get(reverse('inventario_lista'), filtros)
+        return [p.nombre for p in resp.context['productos']]
+
+    def test_busqueda_por_nombre_sku_y_ubicacion(self):
+        self.assertEqual(self.nombres(q='Cable'), ['Cable THW'])
+        self.assertEqual(self.nombres(q='F2'), ['Lámpara colgante'])
+        self.assertEqual(self.nombres(q='Estante'), ['Cable THW'])
+
+    def test_filtro_por_categoria(self):
+        self.assertEqual(self.nombres(categoria=categoria('Interiores').pk), ['Lámpara colgante'])
+
+    def test_filtro_por_proveedor(self):
+        self.assertEqual(self.nombres(proveedor=self.proveedor.pk), ['Cable THW'])
+
+    def test_filtro_por_estado(self):
+        Producto.objects.filter(pk=self.lampara.pk).update(activo=False)
+        self.assertEqual(self.nombres(estado='inactivos'), ['Lámpara colgante'])
+        self.assertEqual(self.nombres(estado='activos'), ['Cable THW'])
+
+    def test_filtro_por_existencia(self):
+        self.assertEqual(self.nombres(existencia='agotados'), ['Lámpara colgante'])
+        self.assertEqual(self.nombres(existencia='disponibles'), ['Cable THW'])
+        self.assertEqual(self.nombres(existencia='bajo'), [])
+
+    def test_filtro_por_stock_bajo(self):
+        Producto.objects.filter(pk=self.cable.pk).update(stock=1)
+        self.assertEqual(self.nombres(existencia='bajo'), ['Cable THW'])
+
+    def test_filtro_por_rango_de_precio(self):
+        self.assertEqual(self.nombres(precio_min='100'), ['Lámpara colgante'])
+        self.assertEqual(self.nombres(precio_max='50'), ['Cable THW'])
+        self.assertEqual(self.nombres(precio_min='50', precio_max='100'), [])
+
+    def test_filtros_combinados(self):
+        self.assertEqual(
+            self.nombres(q='a', categoria=categoria('Eléctricos').pk, existencia='disponibles'),
+            ['Cable THW'],
+        )
+
+    def test_parametros_invalidos_se_ignoran(self):
+        self.assertEqual(len(self.nombres(categoria='hacker', proveedor='9999',
+                                         estado='otro', existencia='otro',
+                                         precio_min='abc', precio_max='-5')), 2)
+        self.assertEqual(len(self.nombres(precio_min='NaN', precio_max='Infinity')), 2)
+
+    def test_los_filtros_se_conservan_en_la_paginacion(self):
+        for i in range(12):
+            crear_producto_bd(sku=f'PF{i}', nombre=f'Cable extra {i}')
+        resp = self.client.get(reverse('inventario_lista'), {'q': 'Cable'})
+        self.assertContains(resp, 'q=Cable')
+        self.assertContains(resp, 'Página 1 de 2')
+
+
+# ---------------------------------------------------------------------------
+# G1-157: alertas automáticas de stock bajo
+# ---------------------------------------------------------------------------
+class StockBajoTests(TestCase):
+    """G1-157: alertar cuando un producto cruza su stock mínimo."""
+
+    def setUp(self):
+        self.admin = crear_usuario('stock_admin@t.com', Usuario.Rol.ADMINISTRADOR)
+        self.control = crear_usuario('stock_control@t.com', Usuario.Rol.CONTROL_INVENTARIO)
+        self.cliente = crear_usuario('stock_cliente@t.com', Usuario.Rol.CLIENTE)
+        self.p = crear_producto_bd(sku='S1', nombre='Reflector', stock=10, stock_minimo=5)
+
+    def test_stock_bajo_solo_cuando_hay_minimo_configurado(self):
+        self.assertFalse(self.p.stock_bajo)
+        self.p.stock = 4
+        self.assertTrue(self.p.stock_bajo)
+        self.p.stock = 5  # igual al mínimo: todavía no está bajo
+        self.assertFalse(self.p.stock_bajo)
+        self.p.stock_minimo = 0
+        self.p.stock = 0
+        self.assertFalse(self.p.stock_bajo)
+
+    def test_cruzar_el_minimo_notifica_a_quienes_gestionan_inventario(self):
+        MovimientoInventario.registrar_salida(self.p, 6, 'venta', self.admin)
+        self.p.refresh_from_db()
+        self.assertEqual(self.p.stock, 4)
+        destinatarios = set(Notificacion.objects.values_list('destinatario__email', flat=True))
+        self.assertEqual(destinatarios, {self.admin.email, self.control.email})
+        self.assertNotIn(self.cliente.email, destinatarios)
+        notificacion = Notificacion.objects.first()
+        self.assertEqual(notificacion.tipo, Notificacion.Tipo.GENERAL)
+        self.assertIn('Reflector', notificacion.mensaje)
+        self.assertIn('4 unidades', notificacion.mensaje)
+
+    def test_no_repite_la_alerta_si_ya_estaba_bajo(self):
+        MovimientoInventario.registrar_salida(self.p, 6, 'venta', self.admin)
+        cantidad = Notificacion.objects.count()
+        MovimientoInventario.registrar_salida(self.p, 1, 'venta', self.admin)
+        self.assertEqual(Notificacion.objects.count(), cantidad)
+
+    def test_no_alerta_si_el_minimo_es_cero(self):
+        Producto.objects.filter(pk=self.p.pk).update(stock_minimo=0)
+        MovimientoInventario.registrar_salida(self.p, 10, 'venta', self.admin)
+        self.assertEqual(Notificacion.objects.count(), 0)
+
+    def test_no_alerta_si_la_salida_no_llega_al_minimo(self):
+        MovimientoInventario.registrar_salida(self.p, 2, 'venta', self.admin)
+        self.assertEqual(Notificacion.objects.count(), 0)
+
+    def test_la_lista_marca_el_producto_con_stock_bajo(self):
+        Producto.objects.filter(pk=self.p.pk).update(stock=4)
+        self.client.force_login(self.admin)
+        resp = self.client.get(reverse('inventario_lista'))
+        self.assertTrue(resp.context['hay_stock_bajo'])
+        self.assertContains(resp, 'Stock bajo')
+        self.assertContains(resp, 'Hay productos con stock bajo')
+
+    def test_la_alerta_no_aparece_si_no_hay_productos_bajos(self):
+        self.client.force_login(self.admin)
+        resp = self.client.get(reverse('inventario_lista'))
+        self.assertFalse(resp.context['hay_stock_bajo'])
+        self.assertNotContains(resp, 'Hay productos con stock bajo')

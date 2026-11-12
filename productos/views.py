@@ -1,13 +1,19 @@
+from decimal import Decimal, InvalidOperation
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
+from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value
 from django.db.models.functions import Replace
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
-
-from django.db.models import Count, Q, Value
+from openpyxl import Workbook
+from openpyxl.styles import Font
+from openpyxl.utils import get_column_letter
 
 from .models import Categoria, MovimientoInventario, Producto, Proveedor
 from .forms import CategoriaForm, EntradaInventarioForm, InactivarProveedorForm, ProductoForm, ProveedorEditarForm, ProveedorForm, SalidaInventarioForm
@@ -419,3 +425,168 @@ def registrar_salida(request):
             )
             return redirect('salidas_lista')
     return _render_salidas(request, form, abrir_modal=True)
+
+
+# ---------------------------------------------------------------------------
+# G1-155 / G1-156 / G1-157: inventario actual, filtros y alertas de stock
+# ---------------------------------------------------------------------------
+def _decimal_parametro(valor):
+    """Convierte un parámetro de la URL en Decimal; si no es válido devuelve None."""
+    if valor in (None, ''):
+        return None
+    try:
+        numero = Decimal(valor)
+    except (InvalidOperation, TypeError, ValueError):
+        return None
+    if not numero.is_finite() or numero < 0:
+        return None
+    return numero
+
+
+def _productos_filtrados(request):
+    """G1-156: aplica los filtros combinables del inventario y devuelve la lista y los valores usados."""
+    filtros = {
+        'q': request.GET.get('q', '').strip(),
+        'categoria': request.GET.get('categoria', '').strip(),
+        'proveedor': request.GET.get('proveedor', '').strip(),
+        'estado': request.GET.get('estado', '').strip(),
+        'existencia': request.GET.get('existencia', '').strip(),
+        'precio_min': request.GET.get('precio_min', '').strip(),
+        'precio_max': request.GET.get('precio_max', '').strip(),
+    }
+
+    productos = Producto.objects.select_related('proveedor', 'categoria').annotate(
+        valor_total=ExpressionWrapper(
+            F('stock') * F('precio'),
+            output_field=DecimalField(max_digits=14, decimal_places=2),
+        )
+    )
+
+    if filtros['q']:
+        productos = productos.filter(
+            Q(nombre__icontains=filtros['q'])
+            | Q(sku__icontains=filtros['q'])
+            | Q(ubicacion__icontains=filtros['q'])
+        )
+
+    if filtros['categoria'].isdigit() and Categoria.objects.filter(pk=filtros['categoria']).exists():
+        productos = productos.filter(categoria_id=filtros['categoria'])
+    else:
+        filtros['categoria'] = ''
+
+    if filtros['proveedor'].isdigit() and Proveedor.objects.filter(pk=filtros['proveedor']).exists():
+        productos = productos.filter(proveedor_id=filtros['proveedor'])
+    else:
+        filtros['proveedor'] = ''
+
+    if filtros['estado'] == 'activos':
+        productos = productos.filter(activo=True)
+    elif filtros['estado'] == 'inactivos':
+        productos = productos.filter(activo=False)
+    else:
+        filtros['estado'] = ''
+
+    if filtros['existencia'] == 'agotados':
+        productos = productos.filter(stock=0)
+    elif filtros['existencia'] == 'bajo':
+        productos = productos.filter(stock_minimo__gt=0, stock__lt=F('stock_minimo'))
+    elif filtros['existencia'] == 'disponibles':
+        productos = productos.filter(stock__gt=0)
+    else:
+        filtros['existencia'] = ''
+
+    precio_min = _decimal_parametro(filtros['precio_min'])
+    if precio_min is None:
+        filtros['precio_min'] = ''
+    else:
+        productos = productos.filter(precio__gte=precio_min)
+
+    precio_max = _decimal_parametro(filtros['precio_max'])
+    if precio_max is None:
+        filtros['precio_max'] = ''
+    else:
+        productos = productos.filter(precio__lte=precio_max)
+
+    return productos, filtros
+
+
+def _totales_inventario(productos):
+    """G1-155: totales del inventario (respetan los filtros activos)."""
+    agregados = productos.aggregate(
+        total_unidades=Sum('stock'),
+        total_valor=Sum('valor_total'),
+        total_bajo_stock=Count('pk', filter=Q(stock_minimo__gt=0, stock__lt=F('stock_minimo'))),
+        total_agotados=Count('pk', filter=Q(stock=0)),
+    )
+    return {
+        'total_productos': productos.count(),
+        'total_unidades': agregados['total_unidades'] or 0,
+        'total_valor': agregados['total_valor'] or Decimal('0'),
+        'total_bajo_stock': agregados['total_bajo_stock'] or 0,
+        'total_agotados': agregados['total_agotados'] or 0,
+    }
+
+
+@login_required
+@permission_required('Usuarios.gestionar_inventario', raise_exception=True)
+def inventario_lista(request):
+    """G1-155 / G1-156: listado del inventario actual con filtros combinables."""
+    productos, filtros = _productos_filtrados(request)
+    pagina = Paginator(productos, 10).get_page(request.GET.get('page'))
+    return render(request, 'productos/inventario_lista.html', {
+        'productos': pagina,
+        'filtros': filtros,
+        'categorias': Categoria.objects.all(),
+        'proveedores': Proveedor.objects.all(),
+        'totales': _totales_inventario(productos),
+        # G1-157: los productos por debajo del mínimo se resaltan en la tabla
+        'hay_stock_bajo': productos.filter(stock_minimo__gt=0, stock__lt=F('stock_minimo')).exists(),
+    })
+
+
+@login_required
+@permission_required('Usuarios.gestionar_inventario', raise_exception=True)
+def inventario_exportar(request):
+    """G1-155: descarga el inventario filtrado en un archivo Excel (.xlsx)."""
+    productos, _ = _productos_filtrados(request)
+
+    libro = Workbook()
+    hoja = libro.active
+    hoja.title = 'Inventario'
+    encabezados = [
+        'Código (SKU)', 'Producto', 'Categoría', 'Proveedor', 'Ubicación',
+        'Existencias', 'Stock mínimo', 'Valor unitario', 'Valor total', 'Estado',
+    ]
+    hoja.append(encabezados)
+    for celda in hoja[1]:
+        celda.font = Font(bold=True)
+
+    for producto in productos:
+        estado = 'Inactivo' if not producto.activo else ('Stock bajo' if producto.stock_bajo else 'Activo')
+        hoja.append([
+            producto.sku,
+            producto.nombre,
+            producto.categoria.nombre if producto.categoria_id else '',
+            producto.proveedor.nombre if producto.proveedor_id else '',
+            producto.ubicacion,
+            producto.stock,
+            producto.stock_minimo,
+            float(producto.precio),
+            float(producto.valor_total),
+            estado,
+        ])
+
+    for indice, ancho in enumerate([16, 40, 20, 28, 24, 12, 13, 15, 15, 12], start=1):
+        hoja.column_dimensions[get_column_letter(indice)].width = ancho
+    hoja.freeze_panes = 'A2'
+
+    respuesta = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    nombre = f'inventario_{timezone.localdate():%Y%m%d}.xlsx'
+    respuesta['Content-Disposition'] = f'attachment; filename="{nombre}"'
+    libro.save(respuesta)
+    return respuesta
+
+
+
