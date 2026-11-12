@@ -25,4 +25,7 @@ urlpatterns = [
         # G1-152: salidas de inventario
     path('inventario/salidas/', views.salidas_lista, name='salidas_lista'),
     path('inventario/salidas/registrar/', views.registrar_salida, name='registrar_salida'),
+        # G1-155 / G1-156: inventario actual y exportación
+    path('inventario/', views.inventario_lista, name='inventario_lista'),
+    path('inventario/exportar/', views.inventario_exportar, name='inventario_exportar'),
 ]
