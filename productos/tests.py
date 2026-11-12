@@ -794,3 +794,83 @@ class EntradaInventarioTests(TestCase):
         self.assertContains(self.client.get(reverse('entradas_lista')), 'Página 1 de 2')
         self.assertContains(self.client.get(reverse('entradas_lista'), {'q': 'E1'}), 'Foco')
         self.assertNotContains(self.client.get(reverse('entradas_lista'), {'q': 'zzz'}), 'Foco</p>')
+        
+
+@override_settings(MEDIA_ROOT=MEDIA_TEMPORAL)
+class TextoAlternativoTests(TestCase):
+    """G1-979: texto alternativo en las imágenes de productos (G1-1018 a G1-1021)."""
+
+    MENSAJE = 'Describe la imagen para las personas que usan lectores de pantalla.'
+
+    def setUp(self):
+        self.admin = crear_usuario('admin_alt@test.com', Usuario.Rol.ADMINISTRADOR)
+        self.client.force_login(self.admin)
+
+    def datos(self, **overrides):
+        datos = {
+            'sku': 'ALT1', 'nombre': 'Panel LED Redondo 18W',
+            'categoria': categoria('Iluminación').pk,
+            'precio': '30.00', 'precio_oferta': '', 'stock': '5',
+            'descripcion': 'Panel.', 'instalacion': 'Empotrar en el techo.',
+            'imagen': imagen_valida(),
+            'texto_alternativo': 'Panel LED redondo de 18 W con marco blanco',
+        }
+        datos.update(overrides)
+        return datos
+
+    # ---------- Criterio 1: sin texto alternativo no se guarda la imagen ----------
+    def test_imagen_sin_texto_alternativo_no_se_guarda(self):
+        resp = self.client.post(reverse('crear_producto'), self.datos(texto_alternativo=''))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, self.MENSAJE, count=1)
+        self.assertFalse(Producto.objects.filter(sku='ALT1').exists())
+
+    def test_texto_alternativo_con_solo_espacios_no_se_guarda(self):
+        resp = self.client.post(reverse('crear_producto'), self.datos(texto_alternativo='     '))
+        self.assertContains(resp, self.MENSAJE)
+        self.assertFalse(Producto.objects.filter(sku='ALT1').exists())
+
+    def test_texto_alternativo_de_mas_de_125_caracteres_no_se_guarda(self):
+        resp = self.client.post(reverse('crear_producto'), self.datos(texto_alternativo='a' * 126))
+        self.assertContains(resp, 'no puede superar los 125 caracteres')
+        self.assertFalse(Producto.objects.filter(sku='ALT1').exists())
+
+    def test_imagen_con_texto_alternativo_se_guarda(self):
+        resp = self.client.post(reverse('crear_producto'), self.datos())
+        self.assertRedirects(resp, reverse('productos_lista'))
+        p = Producto.objects.get(sku='ALT1')
+        self.assertEqual(p.texto_alternativo, 'Panel LED redondo de 18 W con marco blanco')
+
+    def test_sin_imagen_no_se_exige_texto_alternativo(self):
+        datos = self.datos(texto_alternativo='')
+        del datos['imagen']
+        resp = self.client.post(reverse('crear_producto'), datos)
+        self.assertRedirects(resp, reverse('productos_lista'))
+
+    # ---------- G1-1021: la regla también se cumple en el Django Admin ----------
+    def test_django_admin_no_guarda_imagen_sin_texto_alternativo(self):
+        superusuario = Usuario.objects.create_superuser(
+            username='su_alt@test.com', email='su_alt@test.com', password='Prueba123!'
+        )
+        self.client.force_login(superusuario)
+        datos = self.datos(texto_alternativo='')
+        datos['activo'] = 'on'
+        resp = self.client.post(reverse('admin:productos_producto_add'), datos)
+        self.assertContains(resp, self.MENSAJE)
+        self.assertFalse(Producto.objects.filter(sku='ALT1').exists())
+
+    # ---------- Criterio 2: el texto se usa como atributo alt ----------
+    def test_alt_imagen_devuelve_el_texto_alternativo(self):
+        p = Producto(nombre='Panel LED Redondo 18W', texto_alternativo='Panel con marco blanco')
+        self.assertEqual(p.alt_imagen(), 'Panel con marco blanco')
+
+    def test_alt_imagen_usa_el_nombre_si_no_hay_texto(self):
+        p = Producto(nombre='Panel LED Redondo 18W')
+        self.assertEqual(p.alt_imagen(), 'Panel LED Redondo 18W')
+
+    def test_lista_y_detalle_usan_el_texto_alternativo_en_el_alt(self):
+        self.client.post(reverse('crear_producto'), self.datos())
+        p = Producto.objects.get(sku='ALT1')
+        alt = 'alt="Panel LED redondo de 18 W con marco blanco"'
+        self.assertContains(self.client.get(reverse('productos_lista')), alt)
+        self.assertContains(self.client.get(reverse('producto_detalle', args=[p.id])), alt)
