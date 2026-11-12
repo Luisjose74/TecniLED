@@ -12,7 +12,7 @@ class ProductoForm(forms.ModelForm):
         model = Producto
         fields = [
             'sku', 'nombre', 'categoria', 'proveedor', 'precio', 'precio_oferta',
-            'stock', 'imagen', 'descripcion', 'instalacion',
+            'stock', 'stock_minimo', 'ubicacion', 'imagen', 'descripcion', 'instalacion',
             'especificaciones',  # NUEVO (HU G1-144)
         ]
         labels = {
@@ -23,6 +23,8 @@ class ProductoForm(forms.ModelForm):
             'precio': 'Precio normal',
             'precio_oferta': 'Precio de oferta',
             'stock': 'Existencias disponibles',
+            'stock_minimo': 'Stock mínimo',
+            'ubicacion': 'Ubicación',
             'imagen': 'Imagen',
             'descripcion': 'Descripción Corta',
             'instalacion': 'Uso e Instalación',
@@ -67,6 +69,14 @@ class ProductoForm(forms.ModelForm):
                 'invalid': 'El stock debe ser un número entero.',
                 'min_value': 'El stock no puede ser negativo.',
             },
+            'stock_minimo': {
+                'required': 'El stock mínimo es obligatorio (usa 0 para no alertar).',
+                'invalid': 'El stock mínimo debe ser un número entero.',
+                'min_value': 'El stock mínimo no puede ser negativo.',
+            },
+            'ubicacion': {
+                'max_length': 'La ubicación no puede superar los 100 caracteres.',
+            },
             'imagen': {
                 'invalid_image': 'El archivo no es una imagen válida. Usa PNG, JPG o WEBP.',
             },
@@ -110,6 +120,11 @@ class ProductoForm(forms.ModelForm):
                 # G1-147: el navegador también avisa antes de enviar (el servidor es la validación real)
         self.fields['precio'].widget.attrs['min'] = '0.01'
         self.fields['precio_oferta'].widget.attrs['min'] = '0.01'
+        # G1-155 / G1-157: ubicación y mínimo de existencias
+        self.fields['stock_minimo'].required = False
+        self.fields['stock_minimo'].initial = 0
+        self.fields['stock_minimo'].widget.attrs.update({'min': '0', 'placeholder': '0'})
+        self.fields['ubicacion'].widget.attrs['placeholder'] = 'Ej: Estante A-3, bodega principal'
 
     # ---------- G1-147: validaciones ----------
     def clean_sku(self):
@@ -142,6 +157,10 @@ class ProductoForm(forms.ModelForm):
         if oferta is not None and oferta <= 0:
             raise forms.ValidationError('El precio de oferta debe ser mayor a 0.')
         return oferta
+
+    def clean_stock_minimo(self):
+        # G1-157: vacío equivale a 0 (sin alerta de stock bajo)
+        return self.cleaned_data.get('stock_minimo') or 0
 
     def clean_imagen(self):
         imagen = self.cleaned_data.get('imagen')

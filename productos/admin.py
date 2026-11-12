@@ -42,9 +42,9 @@ class ProveedorAdmin(admin.ModelAdmin):
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ('sku', 'nombre', 'categoria', 'proveedor', 'precio', 'precio_oferta', 'stock', 'activo')
+    list_display = ('sku', 'nombre', 'categoria', 'proveedor', 'precio', 'precio_oferta', 'stock', 'stock_minimo', 'ubicacion', 'activo')
     list_filter = ('categoria', 'proveedor', 'activo', 'destacado_en_inicio')
-    search_fields = ('sku', 'nombre')
+    search_fields = ('sku', 'nombre', 'ubicacion')
     ordering = ('nombre',)
 
 @admin.register(Categoria)
