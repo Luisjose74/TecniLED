@@ -80,6 +80,11 @@ class Producto(models.Model):
 
     # --- Imagen ---
     imagen = models.ImageField('Imagen', upload_to='productos/', blank=True, null=True)
+    # G1-1018: texto que leen los lectores de pantalla en lugar de la imagen
+    texto_alternativo = models.CharField(
+        'Texto alternativo de la imagen', max_length=125, blank=True,
+        help_text='Describe lo que se ve en la foto. Ejemplo: Panel LED redondo de 18 W con marco blanco.',
+    )
 
     # --- Contenido ---
     descripcion = models.TextField('Descripción Corta')
@@ -108,6 +113,12 @@ class Producto(models.Model):
     def get_categoria_display(self):
         """Compatibilidad: inicio.html, producto_detalle.html y la lista siguen usando este nombre."""
         return self.categoria.nombre
+    
+    def alt_imagen(self):
+        """G1-1018: texto para el atributo alt. Si no se ha escrito, usa el nombre."""
+        if self.texto_alternativo:
+            return self.texto_alternativo
+        return self.nombre
 
     def porcentaje_descuento(self):
         """Devuelve el % de descuento (ej: 23) o 0 si no tiene oferta."""
@@ -136,10 +147,12 @@ class Producto(models.Model):
             raise ValidationError({
                 'precio_oferta': 'El precio de oferta debe ser menor al precio normal.'
             })
-
+        # G1-1021: regla de G1-1019 en el modelo, para que la cumplan el panel y el Django Admin
+        if self.imagen and not self.texto_alternativo:
+            raise ValidationError({
+                'texto_alternativo': 'Describe la imagen para las personas que usan lectores de pantalla.'
+            })
         
-
-
 class MovimientoInventario(models.Model):
     """G1-149: historial de movimientos de stock. Cada entrada de mercancía deja un registro."""
 

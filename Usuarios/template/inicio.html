@@ -123,7 +123,7 @@
         <!-- Imagen: ahora es un ENLACE <a> que lleva al detalle del producto -->
         <a href="{% url 'producto_detalle' producto.id %}" class="relative aspect-square overflow-hidden block bg-gray-100 dark:bg-gray-800">
           {% if producto.imagen %}
-            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+            <img src="{{ producto.imagen.url }}" alt="{{ producto.alt_imagen }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
           {% endif %}
 
           {% if producto.porcentaje_descuento %}

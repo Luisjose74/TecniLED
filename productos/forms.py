@@ -1,10 +1,10 @@
-from django import forms
-
-from django.db.models import Q
-from django.core.files.uploadedfile import UploadedFile
 import re
 
-from .models import Categoria, MovimientoInventario, Producto, Proveedor
+from django import forms
+from django.core.files.uploadedfile import UploadedFile
+from django.db.models import Q
+
+from .models import Categoria, Producto, Proveedor
 
 
 class ProductoForm(forms.ModelForm):
@@ -12,7 +12,7 @@ class ProductoForm(forms.ModelForm):
         model = Producto
         fields = [
             'sku', 'nombre', 'categoria', 'proveedor', 'precio', 'precio_oferta',
-            'stock', 'imagen', 'descripcion', 'instalacion',
+            'stock', 'imagen', 'texto_alternativo', 'descripcion', 'instalacion',
             'especificaciones',  # NUEVO (HU G1-144)
         ]
         labels = {
@@ -24,6 +24,7 @@ class ProductoForm(forms.ModelForm):
             'precio_oferta': 'Precio de oferta',
             'stock': 'Existencias disponibles',
             'imagen': 'Imagen',
+            'texto_alternativo': 'Texto alternativo de la imagen',
             'descripcion': 'Descripción Corta',
             'instalacion': 'Uso e Instalación',
             'especificaciones': 'Características Técnicas',  
@@ -70,6 +71,9 @@ class ProductoForm(forms.ModelForm):
             'imagen': {
                 'invalid_image': 'El archivo no es una imagen válida. Usa PNG, JPG o WEBP.',
             },
+            'texto_alternativo': {
+                'max_length': 'El texto alternativo no puede superar los 125 caracteres.',
+            },
             'descripcion': {'required': 'La descripción corta es obligatoria.'},
             'instalacion': {'required': 'El campo Uso e Instalación es obligatorio.'},
         }
@@ -98,6 +102,8 @@ class ProductoForm(forms.ModelForm):
         self.fields['imagen'].widget.attrs['class'] = 'hidden'
         self.fields['imagen'].widget.attrs['id'] = 'id_imagen'
         self.fields['imagen'].required = False
+        # G1-1020: el lector de pantalla lee también la ayuda que está debajo del campo
+        self.fields['texto_alternativo'].widget.attrs['aria-describedby'] = 'ayuda-texto-alternativo'
         # Selector de proveedor (como en el Figma)
         self.fields['proveedor'].empty_label = 'Sin proveedor'
                 # Proveedores activos + el que ya tiene este producto (si se inactivó después),
@@ -153,6 +159,11 @@ class ProductoForm(forms.ModelForm):
             if formato not in ('JPEG', 'PNG', 'WEBP'):
                 raise forms.ValidationError('Formato no permitido. Usa PNG, JPG o WEBP.')
         return imagen
+    
+        # ---------- G1-1019: texto alternativo obligatorio si hay imagen ----------
+    def clean_texto_alternativo(self):
+        texto = self.cleaned_data.get('texto_alternativo') or ''
+        return ' '.join(texto.split())  # quita espacios de sobra
 
 
 class ProveedorForm(forms.ModelForm):
